@@ -1,0 +1,9 @@
+# Environment
+.env
+*.env
+docker-compose.yml
+README.md
+SESSION.md
+venv/
+Dockerfile
+backend/crowdsourced-sound-labelling-74bd260a2376.json
