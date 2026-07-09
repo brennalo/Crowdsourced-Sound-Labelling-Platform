@@ -4,50 +4,42 @@ from app.config import get_settings
 
 settings = get_settings()
 
+HIGH_CONFIDENCE_THRESHOLD = 0.75  # segments at or above → suggestion_pending
+
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=10)
 def run_segmentation(self, recording_id: str, gcs_raw_path: str, user_id: str):
-    """
-    Downloads raw recording from GCS, splits into 3s segments,
-    discards silent ones, uploads segments, updates DB.
-    Runs synchronously inside Celery worker using a sync DB session.
-    """
     import asyncio
     asyncio.run(_run_segmentation(recording_id, gcs_raw_path, user_id))
 
 
 async def _run_segmentation(recording_id: str, gcs_raw_path: str, user_id: str):
-    from sqlalchemy.ext.asyncio import AsyncSession
     from sqlalchemy import select
     from app.database import AsyncSessionLocal
     from app.models.recording import Recording
     from app.models.segment import Segment
     from app.services.audio import (
-        download_audio_from_gcs,
-        segment_audio,
-        upload_segment_to_gcs,
-        delete_from_gcs,
-        is_silent,
+        download_audio_from_gcs, segment_audio,
+        upload_segment_to_gcs, delete_from_gcs, is_silent,
     )
+    from app.services.inference import get_inference_service
 
     recording_uuid = uuid.UUID(recording_id)
     user_uuid = uuid.UUID(user_id)
+    inference = get_inference_service()
 
     async with AsyncSessionLocal() as db:
         try:
-            # Load the raw audio
             audio, sr = download_audio_from_gcs(gcs_raw_path)
-
-            segments = segment_audio(audio, sr, settings.segment_length_sec)
+            raw_segments = segment_audio(audio, sr, settings.segment_length_sec)
             segment_records = []
 
-            for seg in segments:
+            for seg in raw_segments:
                 seg_id = uuid.uuid4()
                 silent = is_silent(seg["audio"], settings.silence_threshold_dbfs)
                 gcs_path = f"segments/{recording_id}/{seg_id}.wav"
 
                 if silent:
-                    # Create record with is_silent=True but don't upload audio
                     segment_records.append(Segment(
                         id=seg_id,
                         recording_id=recording_uuid,
@@ -56,24 +48,45 @@ async def _run_segmentation(recording_id: str, gcs_raw_path: str, user_id: str):
                         start_sec=seg["start_sec"],
                         end_sec=seg["end_sec"],
                         is_silent=True,
-                        review_status="pending",
+                        review_status="annotation_pending",
                     ))
-                else:
-                    upload_segment_to_gcs(seg["audio"], sr, gcs_path)
-                    segment_records.append(Segment(
-                        id=seg_id,
-                        recording_id=recording_uuid,
-                        user_id=user_uuid,
-                        gcs_path=gcs_path,
-                        start_sec=seg["start_sec"],
-                        end_sec=seg["end_sec"],
-                        is_silent=False,
-                        review_status="pending",
-                    ))
+                    continue
+
+                upload_segment_to_gcs(seg["audio"], sr, gcs_path)
+
+                # Run inference immediately after upload
+                model_label = None
+                model_confidence = None
+                review_status = "annotation_pending"
+
+                if inference.is_loaded():
+                    try:
+                        prediction = inference.predict(seg["audio"], sr)
+                        model_label = prediction["label"]
+                        model_confidence = prediction["confidence"]
+                        # Route by confidence threshold
+                        if model_confidence >= HIGH_CONFIDENCE_THRESHOLD:
+                            review_status = "suggestion_pending"
+                        else:
+                            review_status = "annotation_pending"
+                    except Exception as e:
+                        print(f"[segmentation] Inference failed for {seg_id}: {e}")
+
+                segment_records.append(Segment(
+                    id=seg_id,
+                    recording_id=recording_uuid,
+                    user_id=user_uuid,
+                    gcs_path=gcs_path,
+                    start_sec=seg["start_sec"],
+                    end_sec=seg["end_sec"],
+                    is_silent=False,
+                    review_status=review_status,
+                    model_label=model_label,
+                    model_confidence=model_confidence,
+                ))
 
             db.add_all(segment_records)
 
-            # Update recording status
             result = await db.execute(select(Recording).where(Recording.id == recording_uuid))
             recording = result.scalar_one_or_none()
             if recording:
@@ -81,14 +94,18 @@ async def _run_segmentation(recording_id: str, gcs_raw_path: str, user_id: str):
                 recording.duration_sec = librosa.get_duration(y=audio, sr=sr)
                 recording.status = "done"
 
-            # Delete raw file from GCS after successful segmentation
             delete_from_gcs(gcs_raw_path)
-
             await db.commit()
-            print(f"[segmentation] Recording {recording_id}: {len(segment_records)} segments created")
+
+            non_silent = sum(1 for s in segment_records if not s.is_silent)
+            suggestion = sum(1 for s in segment_records if s.review_status == "suggestion_pending")
+            annotation = sum(1 for s in segment_records if s.review_status == "annotation_pending" and not s.is_silent)
+            print(
+                f"[segmentation] {recording_id}: {non_silent} segments "
+                f"({suggestion} suggestion_pending, {annotation} annotation_pending)"
+            )
 
         except Exception as e:
-            # Mark recording as failed
             result = await db.execute(select(Recording).where(Recording.id == recording_uuid))
             recording = result.scalar_one_or_none()
             if recording:

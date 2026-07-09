@@ -4,7 +4,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import UserRegister, UserLogin, UserOut, TokenOut
-from app.auth import hash_password, verify_password, create_access_token
+from app.auth import hash_password, verify_password, create_access_token, get_current_user
 import uuid
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -21,7 +21,7 @@ async def register(body: UserRegister, db: AsyncSession = Depends(get_db)):
         email=body.email,
         password_hash=hash_password(body.password),
         display_name=body.display_name,
-        role="contributor",
+        role=body.role,  # contributor | researcher (validated by schema)
     )
     db.add(user)
     await db.commit()
@@ -35,7 +35,6 @@ async def register(body: UserRegister, db: AsyncSession = Depends(get_db)):
 async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
-
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
@@ -44,5 +43,5 @@ async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-async def me(current_user: User = Depends(__import__("app.auth", fromlist=["get_current_user"]).get_current_user)):
+async def me(current_user: User = Depends(get_current_user)):
     return UserOut.model_validate(current_user)

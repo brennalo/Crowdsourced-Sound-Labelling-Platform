@@ -4,17 +4,20 @@ import '../models/models.dart';
 import 'dio_client.dart';
 import 'api_services.dart';
 
-// ── Core ──────────────────────────────────────────────────────
+// ── Services ──────────────────────────────────────────────────
 
 final dioProvider = Provider<Dio>((ref) => buildDioClient());
-
 final authServiceProvider = Provider((ref) => AuthService(ref.watch(dioProvider)));
+final labelServiceProvider = Provider((ref) => LabelService(ref.watch(dioProvider)));
 final recordingServiceProvider = Provider((ref) => RecordingService(ref.watch(dioProvider)));
 final segmentServiceProvider = Provider((ref) => SegmentService(ref.watch(dioProvider)));
-final annotationServiceProvider = Provider((ref) => AnnotationService(ref.watch(dioProvider)));
 final suggestionServiceProvider = Provider((ref) => SuggestionService(ref.watch(dioProvider)));
+final consensusServiceProvider = Provider((ref) => ConsensusService(ref.watch(dioProvider)));
+final trainingPoolServiceProvider = Provider((ref) => TrainingPoolService(ref.watch(dioProvider)));
+final researcherServiceProvider = Provider((ref) => ResearcherService(ref.watch(dioProvider)));
+final exportServiceProvider = Provider((ref) => ExportService(ref.watch(dioProvider)));
 
-// ── Auth state ────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────
 
 class AuthState {
   final User? user;
@@ -24,11 +27,10 @@ class AuthState {
   const AuthState({this.user, this.isLoading = false, this.error});
 
   bool get isAuthenticated => user != null;
-  AuthState copyWith({User? user, bool? isLoading, String? error}) => AuthState(
-        user: user ?? this.user,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  bool get isResearcher => user?.isResearcher ?? false;
+
+  AuthState copyWith({User? user, bool? isLoading, String? error}) =>
+      AuthState(user: user ?? this.user, isLoading: isLoading ?? this.isLoading, error: error);
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -55,22 +57,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await saveToken(result.accessToken);
       state = AuthState(user: result.user);
     } on DioException catch (e) {
-      final msg = e.response?.data?['detail'] ?? 'Login failed';
-      state = state.copyWith(isLoading: false, error: msg);
+      state = state.copyWith(isLoading: false, error: e.response?.data?['detail'] ?? 'Login failed');
     }
   }
 
-  Future<void> register(String email, String password, String? displayName) async {
+  Future<void> register(String email, String password, String? displayName, {String role = 'contributor'}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final result = await _auth.register(
-        email: email, password: password, displayName: displayName,
-      );
+          email: email, password: password, displayName: displayName, role: role);
       await saveToken(result.accessToken);
       state = AuthState(user: result.user);
     } on DioException catch (e) {
-      final msg = e.response?.data?['detail'] ?? 'Registration failed';
-      state = state.copyWith(isLoading: false, error: msg);
+      state = state.copyWith(isLoading: false, error: e.response?.data?['detail'] ?? 'Registration failed');
     }
   }
 
@@ -81,35 +80,61 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(ref.watch(authServiceProvider)),
-);
+    (ref) => AuthNotifier(ref.watch(authServiceProvider)));
 
-// ── Recordings ────────────────────────────────────────────────
+// ── Labels (cached globally) ──────────────────────────────────
 
-final myRecordingsProvider = FutureProvider<List<Recording>>((ref) {
-  return ref.watch(recordingServiceProvider).listMyRecordings();
+final labelsProvider = FutureProvider<List<AppLabel>>((ref) {
+  return ref.watch(labelServiceProvider).fetchLabels();
 });
 
-// ── Segments for a recording ──────────────────────────────────
+// ── My Clips ──────────────────────────────────────────────────
 
-final recordingSegmentsProvider = FutureProvider.family<List<Segment>, String>((ref, recordingId) {
-  return ref.watch(segmentServiceProvider).listSegments(recordingId: recordingId);
+final mySegmentsProvider = FutureProvider.family<List<Segment>, String>((ref, reviewStatus) {
+  return ref.watch(segmentServiceProvider).listMySegments(reviewStatus: reviewStatus);
 });
 
-// ── Pending segments (for manual annotation queue) ────────────
-
-final pendingSegmentsProvider = FutureProvider<List<Segment>>((ref) {
-  return ref.watch(segmentServiceProvider).listSegments(reviewStatus: 'pending');
+// All own segments regardless of status (for "All" tab)
+final allMySegmentsProvider = FutureProvider<List<Segment>>((ref) {
+  return ref.watch(segmentServiceProvider).listMySegments(sort: 'confidence_asc');
 });
 
 // ── Suggestion queue ──────────────────────────────────────────
 
 final suggestionQueueProvider = FutureProvider<List<Segment>>((ref) {
-  return ref.watch(suggestionServiceProvider).getSuggestionQueue();
+  return ref.watch(suggestionServiceProvider).getQueue();
 });
 
-// ── Segment audio URL ─────────────────────────────────────────
+// ── Consensus ─────────────────────────────────────────────────
 
-final segmentAudioUrlProvider = FutureProvider.family<String, String>((ref, segmentId) {
-  return ref.watch(segmentServiceProvider).getAudioUrl(segmentId);
+final consensusOpenProvider = FutureProvider<List<Segment>>((ref) {
+  return ref.watch(consensusServiceProvider).getOpenVotes();
+});
+
+// ── Training pool ─────────────────────────────────────────────
+
+final trainingPoolProvider = FutureProvider.family<List<Segment>, String>((ref, sort) {
+  return ref.watch(trainingPoolServiceProvider).list(sort: sort);
+});
+
+// ── Researcher queue ──────────────────────────────────────────
+
+final researcherQueueProvider = FutureProvider<List<Segment>>((ref) {
+  return ref.watch(researcherServiceProvider).getReviewQueue();
+});
+
+// ── Export ────────────────────────────────────────────────────
+
+final exportStatsProvider = FutureProvider<ExportStats>((ref) {
+  return ref.watch(researcherServiceProvider).getStats();
+});
+
+final myExportsProvider = FutureProvider<List<ExportJob>>((ref) {
+  return ref.watch(exportServiceProvider).listMyExports();
+});
+
+// ── Recordings ────────────────────────────────────────────────
+
+final myRecordingsProvider = FutureProvider<List<Recording>>((ref) {
+  return ref.watch(recordingServiceProvider).listMyRecordings();
 });

@@ -7,26 +7,24 @@ from app.config import get_settings
 from app.database import AsyncSessionLocal
 from app.models.model_version import ModelVersion
 from app.services.inference import load_active_model_from_gcs
-from app.routers import (
-    auth_router,
-    recordings_router,
-    segments_router,
-    annotations_router,
-    suggestions_router,
-    export_router,
-    model_router,
-)
+from app.routers.auth import router as auth_router
+from app.routers.recordings import router as recordings_router
+from app.routers.segments import router as segments_router
+from app.routers.labels import router as labels_router
+from app.routers.suggestions import router as suggestions_router
+from app.routers.consensus import router as consensus_router
+from app.routers.training_pool import router as training_pool_router
+from app.routers.researcher import router as researcher_router
+from app.routers.export import router as export_router
+from app.routers.model import router as model_router
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # On startup: load active ONNX model from GCS into memory
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(ModelVersion).where(ModelVersion.is_active == True)
-        )
+        result = await db.execute(select(ModelVersion).where(ModelVersion.is_active == True))
         active_model = result.scalar_one_or_none()
         if active_model:
             try:
@@ -35,22 +33,20 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 print(f"[startup] Warning: could not load model — {e}")
         else:
-            print("[startup] No active model found — inference disabled until model is registered")
-
+            print("[startup] No active model — inference disabled until model is registered")
     yield
-    # Shutdown cleanup (nothing needed currently)
 
 
 app = FastAPI(
     title="Forest Sound Platform",
     description="Crowdsourced forest sound collection for illegal logging detection",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,8 +55,11 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(recordings_router)
 app.include_router(segments_router)
-app.include_router(annotations_router)
+app.include_router(labels_router)
 app.include_router(suggestions_router)
+app.include_router(consensus_router)
+app.include_router(training_pool_router)
+app.include_router(researcher_router)
 app.include_router(export_router)
 app.include_router(model_router)
 

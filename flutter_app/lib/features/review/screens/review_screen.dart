@@ -186,8 +186,8 @@ class _SuggestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final label = segment.predictedLabel ?? 'unknown';
-    final confidence = segment.confidence ?? 0.0;
+    final label = segment.modelLabel ?? 'unknown';
+    final confidence = segment.modelConfidence ?? 0.0;
     final displayLabel = AppConfig.labelDisplayNames[label] ?? label;
     final confColor = _confidenceColor(context, confidence);
 

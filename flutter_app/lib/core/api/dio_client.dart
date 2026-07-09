@@ -4,7 +4,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../../config.dart';
 
 const _tokenKey = 'auth_token';
-final _storage = FlutterSecureStorage();
+const _storage = FlutterSecureStorage();
 
 Dio buildDioClient() {
   final dio = Dio(BaseOptions(

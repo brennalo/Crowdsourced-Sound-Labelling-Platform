@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api/providers.dart';
@@ -6,22 +5,26 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/record/screens/record_screen.dart';
 import '../features/record/screens/recordings_list_screen.dart';
-import '../features/annotate/screens/annotate_screen.dart';
-import '../features/review/screens/review_screen.dart';
+import '../features/my_clips/screens/my_clips_screen.dart';
+import '../features/consensus/screens/consensus_screen.dart';
+import '../features/training_pool/screens/training_pool_screen.dart';
+import '../features/researcher/screens/researcher_review_screen.dart';
+import '../features/export/screens/export_screen.dart';
 import '../shell_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final auth = ref.watch(authProvider);
 
   return GoRouter(
     initialLocation: '/record',
     redirect: (context, state) {
-      final isAuth = authState.isAuthenticated;
-      final onAuthPage = state.matchedLocation == '/login' ||
+      final isAuth = auth.isAuthenticated;
+      final onAuth = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
-
-      if (!isAuth && !onAuthPage) return '/login';
-      if (isAuth && onAuthPage) return '/record';
+      if (!isAuth && !onAuth) return '/login';
+      if (isAuth && onAuth) {
+        return auth.isResearcher ? '/review' : '/record';
+      }
       return null;
     },
     routes: [
@@ -30,26 +33,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),
         routes: [
-          GoRoute(
-            path: '/record',
-            builder: (_, __) => const RecordScreen(),
-          ),
+          // ── Contributor routes ─────────────────────────────
+          GoRoute(path: '/record', builder: (_, __) => const RecordScreen()),
           GoRoute(
             path: '/recordings',
             builder: (_, __) => const RecordingsListScreen(),
-            routes: [
-              GoRoute(
-                path: ':recordingId/annotate',
-                builder: (_, state) => AnnotateScreen(
-                  recordingId: state.pathParameters['recordingId']!,
-                ),
-              ),
-            ],
           ),
+          GoRoute(path: '/my-clips', builder: (_, __) => const MyClipsScreen()),
           GoRoute(
-            path: '/review',
-            builder: (_, __) => const ReviewScreen(),
-          ),
+              path: '/consensus', builder: (_, __) => const ConsensusScreen()),
+
+          // ── Shared ────────────────────────────────────────
+          GoRoute(
+              path: '/pool', builder: (_, __) => const TrainingPoolScreen()),
+
+          // ── Researcher routes ──────────────────────────────
+          GoRoute(
+              path: '/review',
+              builder: (_, __) => const ResearcherReviewScreen()),
+          GoRoute(path: '/export', builder: (_, __) => const ExportScreen()),
         ],
       ),
     ],

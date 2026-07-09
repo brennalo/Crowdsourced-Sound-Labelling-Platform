@@ -16,10 +16,28 @@ class Segment(Base):
     start_sec: Mapped[float] = mapped_column(Float, nullable=False)
     end_sec: Mapped[float] = mapped_column(Float, nullable=False)
     is_silent: Mapped[bool] = mapped_column(Boolean, default=False)
-    # pending | annotated | rejected_suggestion | accepted_suggestion
-    review_status: Mapped[str] = mapped_column(String, default="pending")
+
+    # review_status values:
+    #   annotation_pending  — low-confidence, contributor picks label
+    #   suggestion_pending  — high-confidence, contributor accepts/rejects+corrects
+    #   excluded_other      — labelled "other", re-labelable
+    #   training_pool       — authoritative label set, used in training
+    #   consensus_open      — disputed, voting in progress
+    review_status: Mapped[str] = mapped_column(String, default="annotation_pending")
+
+    # Authoritative label used by training export. Set when entering training_pool.
+    effective_label: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Original model prediction — never changes after inference
+    model_label: Mapped[str | None] = mapped_column(String, nullable=True)
+    model_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    # How segment entered training_pool: manual | accepted | auto_7day
+    pool_entry_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     recording: Mapped["Recording"] = relationship(back_populates="segments")
     annotations: Mapped[list["Annotation"]] = relationship(back_populates="segment")
-    suggestion_reviews: Mapped[list["SuggestionReview"]] = relationship(back_populates="segment")
+    consensus_votes: Mapped[list["ConsensusVote"]] = relationship(back_populates="segment")
+    researcher_reviews: Mapped[list["ResearcherReview"]] = relationship(back_populates="segment")

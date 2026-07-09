@@ -2,8 +2,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import '../models/models.dart';
 
-// ── Auth ──────────────────────────────────────────────────────
-
 class AuthService {
   final Dio _dio;
   AuthService(this._dio);
@@ -12,23 +10,19 @@ class AuthService {
     required String email,
     required String password,
     String? displayName,
+    String role = 'contributor',
   }) async {
     final res = await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
       if (displayName != null) 'display_name': displayName,
+      'role': role,
     });
     return AuthToken.fromJson(res.data);
   }
 
-  Future<AuthToken> login({
-    required String email,
-    required String password,
-  }) async {
-    final res = await _dio.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-    });
+  Future<AuthToken> login({required String email, required String password}) async {
+    final res = await _dio.post('/auth/login', data: {'email': email, 'password': password});
     return AuthToken.fromJson(res.data);
   }
 
@@ -38,7 +32,15 @@ class AuthService {
   }
 }
 
-// ── Recordings ───────────────────────────────────────────────
+class LabelService {
+  final Dio _dio;
+  LabelService(this._dio);
+
+  Future<List<AppLabel>> fetchLabels() async {
+    final res = await _dio.get('/labels/');
+    return (res.data as List).map((j) => AppLabel.fromJson(j)).toList();
+  }
+}
 
 class RecordingService {
   final Dio _dio;
@@ -60,15 +62,8 @@ class RecordingService {
       if (lat != null) 'location_lat': lat.toString(),
       if (lng != null) 'location_lng': lng.toString(),
     });
-
-    final res = await _dio.post(
-      '/recordings/',
-      data: formData,
-      options: Options(
-        contentType: 'multipart/form-data',
-        sendTimeout: const Duration(minutes: 5),
-      ),
-    );
+    final res = await _dio.post('/recordings/', data: formData,
+        options: Options(contentType: 'multipart/form-data'));
     return Recording.fromJson(res.data);
   }
 
@@ -76,28 +71,28 @@ class RecordingService {
     final res = await _dio.get('/recordings/');
     return (res.data as List).map((j) => Recording.fromJson(j)).toList();
   }
-
-  Future<Recording> getRecording(String id) async {
-    final res = await _dio.get('/recordings/$id');
-    return Recording.fromJson(res.data);
-  }
 }
-
-// ── Segments ─────────────────────────────────────────────────
 
 class SegmentService {
   final Dio _dio;
   SegmentService(this._dio);
 
-  Future<List<Segment>> listSegments({
-    String? recordingId,
+  Future<List<Segment>> listMySegments({
     String? reviewStatus,
+    String? recordingId,
+    String sort = 'confidence_asc',
   }) async {
-    final res = await _dio.get('/segments/', queryParameters: {
-      if (recordingId != null) 'recording_id': recordingId,
+    final res = await _dio.get('/segments/my', queryParameters: {
       if (reviewStatus != null) 'review_status': reviewStatus,
+      if (recordingId != null) 'recording_id': recordingId,
+      'sort': sort,
     });
     return (res.data as List).map((j) => Segment.fromJson(j)).toList();
+  }
+
+  Future<Segment> updateOwnLabel(String segmentId, String label) async {
+    final res = await _dio.patch('/segments/my/$segmentId/label', data: {'label': label});
+    return Segment.fromJson(res.data);
   }
 
   Future<String> getAudioUrl(String segmentId) async {
@@ -106,41 +101,113 @@ class SegmentService {
   }
 }
 
-// ── Annotations ──────────────────────────────────────────────
-
-class AnnotationService {
-  final Dio _dio;
-  AnnotationService(this._dio);
-
-  Future<Annotation> annotateSegment({
-    required String segmentId,
-    required String label,
-  }) async {
-    final res = await _dio.post('/annotations/$segmentId', data: {'label': label});
-    return Annotation.fromJson(res.data);
-  }
-
-  Future<List<Annotation>> getSegmentAnnotations(String segmentId) async {
-    final res = await _dio.get('/annotations/$segmentId');
-    return (res.data as List).map((j) => Annotation.fromJson(j)).toList();
-  }
-}
-
-// ── Suggestions ──────────────────────────────────────────────
-
 class SuggestionService {
   final Dio _dio;
   SuggestionService(this._dio);
 
-  Future<List<Segment>> getSuggestionQueue({int limit = 20}) async {
-    final res = await _dio.get('/suggestions/queue', queryParameters: {'limit': limit});
+  Future<List<Segment>> getQueue() async {
+    final res = await _dio.get('/suggestions/queue');
     return (res.data as List).map((j) => Segment.fromJson(j)).toList();
   }
 
-  Future<void> reviewSuggestion({
+  Future<Segment> reviewSuggestion({
     required String segmentId,
-    required String decision, // accepted | rejected
+    required String decision,
+    String? correctedLabel,
   }) async {
-    await _dio.post('/suggestions/$segmentId/review', data: {'decision': decision});
+    final res = await _dio.post('/suggestions/$segmentId/review', data: {
+      'decision': decision,
+      if (correctedLabel != null) 'corrected_label': correctedLabel,
+    });
+    return Segment.fromJson(res.data);
+  }
+}
+
+class ConsensusService {
+  final Dio _dio;
+  ConsensusService(this._dio);
+
+  Future<List<Segment>> getOpenVotes() async {
+    final res = await _dio.get('/consensus/open');
+    return (res.data as List).map((j) => Segment.fromJson(j)).toList();
+  }
+
+  Future<void> reportSegment(String segmentId) async {
+    await _dio.post('/consensus/report/$segmentId');
+  }
+
+  Future<Map<String, dynamic>> castVote(String segmentId, String verdict) async {
+    final res = await _dio.post('/consensus/vote/$segmentId', data: {'verdict': verdict});
+    return res.data as Map<String, dynamic>;
+  }
+}
+
+class TrainingPoolService {
+  final Dio _dio;
+  TrainingPoolService(this._dio);
+
+  Future<List<Segment>> list({
+    String sort = 'time_desc',
+    String? label,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final res = await _dio.get('/training-pool/', queryParameters: {
+      'sort': sort,
+      if (label != null) 'label': label,
+      'limit': limit,
+      'offset': offset,
+    });
+    return (res.data as List).map((j) => Segment.fromJson(j)).toList();
+  }
+}
+
+class ResearcherService {
+  final Dio _dio;
+  ResearcherService(this._dio);
+
+  Future<List<Segment>> getReviewQueue() async {
+    final res = await _dio.get('/researcher/queue');
+    return (res.data as List).map((j) => Segment.fromJson(j)).toList();
+  }
+
+  Future<void> submitReview({
+    required String segmentId,
+    required String action,
+    String? correctedLabel,
+  }) async {
+    await _dio.post('/researcher/review/$segmentId', data: {
+      'action': action,
+      if (correctedLabel != null) 'corrected_label': correctedLabel,
+    });
+  }
+
+  Future<void> triggerRetrain() async {
+    await _dio.post('/researcher/retrain');
+  }
+
+  Future<ExportStats> getStats() async {
+    final res = await _dio.get('/researcher/stats');
+    return ExportStats.fromJson(res.data);
+  }
+}
+
+class ExportService {
+  final Dio _dio;
+  ExportService(this._dio);
+
+  Future<ExportJob> requestExport() async {
+    final res = await _dio.post('/exports/');
+    return ExportJob.fromJson(res.data);
+  }
+
+  Future<List<ExportJob>> listMyExports() async {
+    final res = await _dio.get('/exports/my');
+    return (res.data as List).map((j) => ExportJob.fromJson(j)).toList();
+  }
+
+  Future<String> getDownloadUrl(String jobId) async {
+    final res = await _dio.get('/exports/$jobId/download');
+    return res.data['download_url'] as String;
   }
 }

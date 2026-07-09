@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from typing import Literal
 import uuid
 
 
@@ -7,6 +8,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     display_name: str | None = None
+    role: Literal["contributor", "researcher"] = "contributor"
 
 
 class UserLogin(BaseModel):

@@ -1,0 +1,24 @@
+# ML core — torch/torchaudio installed separately in Dockerfile (CPU wheel)
+onnx>=1.16.0
+onnxruntime>=1.18.0
+
+# Audio
+librosa>=0.10.1
+soundfile>=0.12.1
+
+# Data / ML utilities
+numpy>=1.26.0
+scikit-learn>=1.4.0
+
+# HuggingFace dataset (frugalai)
+datasets>=2.19.0
+
+# Google Cloud
+google-cloud-storage>=2.16.0
+
+# Database (export_onnx registers model in PostgreSQL)
+sqlalchemy[asyncio]>=2.0.0
+asyncpg>=0.29.0
+
+# Config
+pydantic-settings>=2.2.0

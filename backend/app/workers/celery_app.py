@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from app.config import get_settings
 
 settings = get_settings()
@@ -11,6 +12,7 @@ celery_app = Celery(
         "app.workers.segmentation",
         "app.workers.retraining",
         "app.workers.export",
+        "app.workers.auto_accept",
     ],
 )
 
@@ -20,7 +22,11 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
-    task_acks_late=True,
-    worker_prefetch_multiplier=1,  # one task at a time per worker — audio processing is CPU heavy
-    broker_use_ssl={"ssl_cert_reqs": "CERT_NONE"} if settings.redis_url.startswith("rediss://") else {},
+    # Beat schedule: run auto-accept once per day at 02:00 UTC
+    beat_schedule={
+        "auto-accept-old-suggestions": {
+            "task": "app.workers.auto_accept.auto_accept_old_suggestions",
+            "schedule": crontab(hour=2, minute=0),
+        },
+    },
 )

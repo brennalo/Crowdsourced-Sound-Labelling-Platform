@@ -13,10 +13,11 @@ class User(Base):
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     display_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    role: Mapped[str] = mapped_column(String, default="contributor")  # contributor | admin
+    role: Mapped[str] = mapped_column(String, default="contributor")  # contributor | researcher | admin
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     recordings: Mapped[list["Recording"]] = relationship(back_populates="user")
     annotations: Mapped[list["Annotation"]] = relationship(back_populates="user")
-    suggestion_reviews: Mapped[list["SuggestionReview"]] = relationship(back_populates="user")
+    consensus_votes: Mapped[list["ConsensusVote"]] = relationship(back_populates="voter")
+    researcher_reviews: Mapped[list["ResearcherReview"]] = relationship(back_populates="researcher")
     export_jobs: Mapped[list["ExportJob"]] = relationship(back_populates="requested_by_user")
