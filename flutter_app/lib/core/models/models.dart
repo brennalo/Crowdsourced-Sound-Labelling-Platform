@@ -44,13 +44,24 @@ class AppLabel {
   final String id;
   final String name;
   final String displayName;
+  final bool isActive;
+  final DateTime? createdAt;
 
-  const AppLabel({required this.id, required this.name, required this.displayName});
+  const AppLabel({
+    required this.id,
+    required this.name,
+    required this.displayName,
+    this.isActive = true,
+    this.createdAt,
+  });
 
   factory AppLabel.fromJson(Map<String, dynamic> j) => AppLabel(
         id: j['id'],
         name: j['name'],
         displayName: j['display_name'],
+        isActive: j['is_active'] ?? true,
+        createdAt:
+            j['created_at'] != null ? DateTime.parse(j['created_at']) : null,
       );
 }
 
@@ -75,7 +86,8 @@ class Recording {
         id: j['id'],
         userId: j['user_id'],
         durationSec: (j['duration_sec'] as num?)?.toDouble(),
-        recordedAt: j['recorded_at'] != null ? DateTime.parse(j['recorded_at']) : null,
+        recordedAt:
+            j['recorded_at'] != null ? DateTime.parse(j['recorded_at']) : null,
         status: j['status'],
         createdAt: DateTime.parse(j['created_at']),
       );
@@ -147,7 +159,8 @@ class Segment {
 
   bool get isAnnotationPending => reviewStatus == 'annotation_pending';
   bool get isSuggestionPending => reviewStatus == 'suggestion_pending';
-  bool get isInPool => reviewStatus == 'training_pool' || reviewStatus == 'consensus_open';
+  bool get isInPool =>
+      reviewStatus == 'training_pool' || reviewStatus == 'consensus_open';
   bool get isExcludedOther => reviewStatus == 'excluded_other';
   bool get needsAction => isAnnotationPending || isSuggestionPending;
 }
@@ -172,7 +185,9 @@ class ExportJob {
         status: j['status'],
         gcsExportPath: j['gcs_export_path'],
         requestedAt: DateTime.parse(j['requested_at']),
-        completedAt: j['completed_at'] != null ? DateTime.parse(j['completed_at']) : null,
+        completedAt: j['completed_at'] != null
+            ? DateTime.parse(j['completed_at'])
+            : null,
       );
 
   bool get isDone => status == 'done';

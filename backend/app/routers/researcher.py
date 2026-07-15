@@ -7,19 +7,18 @@ Researcher-only endpoints:
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, text
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func
 from datetime import datetime, timezone, timedelta
 from app.database import get_db
 from app.models.user import User
 from app.models.segment import Segment
 from app.models.label import Label
-from app.models.researcher_review import ResearcherReview
+from app.models.label_change import LabelChange
 from app.models.retraining_job import RetrainingJob
-from app.schemas.segment import (
-    SegmentOut, ResearcherReviewCreate, ResearcherReviewOut, ExportStatsOut
-)
+from app.schemas.segment import SegmentOut, ResearcherReviewCreate, ExportStatsOut
+from app.schemas.label_change import LabelChangeOut
 from app.auth import require_researcher
+from app.services.label_change_service import record_label_change
 from app.workers.retraining import trigger_retrain_job
 import uuid
 
@@ -27,6 +26,7 @@ router = APIRouter(prefix="/researcher", tags=["researcher"])
 
 QUEUE_SIZE = 20
 _POOL_STATUSES = {"training_pool", "consensus_open"}
+_RESEARCHER_ACTIONS = ["researcher_correction", "researcher_confirm"]
 
 
 @router.get("/queue", response_model=list[SegmentOut])
@@ -39,8 +39,11 @@ async def get_researcher_queue(
     Each refresh replaces reviewed items with new random picks.
     """
     already_reviewed = (
-        select(ResearcherReview.segment_id)
-        .where(ResearcherReview.researcher_id == current_user.id)
+        select(LabelChange.segment_id)
+        .where(
+            LabelChange.changed_by_user_id == current_user.id,
+            LabelChange.change_source.in_(_RESEARCHER_ACTIONS),
+        )
         .scalar_subquery()
     )
 
@@ -57,7 +60,7 @@ async def get_researcher_queue(
     return [SegmentOut.model_validate(s) for s in result.scalars().all()]
 
 
-@router.post("/review/{segment_id}", response_model=ResearcherReviewOut, status_code=status.HTTP_201_CREATED)
+@router.post("/review/{segment_id}", response_model=LabelChangeOut, status_code=status.HTTP_201_CREATED)
 async def submit_researcher_review(
     segment_id: uuid.UUID,
     body: ResearcherReviewCreate,
@@ -67,6 +70,7 @@ async def submit_researcher_review(
     """
     Researcher confirms or corrects a segment. Direct final say — no consensus needed.
     Corrected segments have their effective_label updated immediately.
+    Both actions are logged to label_changes for the audit trail.
     """
     if body.action == "corrected" and not body.corrected_label:
         raise HTTPException(status_code=400, detail="corrected_label required when action is 'corrected'")
@@ -78,8 +82,9 @@ async def submit_researcher_review(
     if segment.review_status not in _POOL_STATUSES:
         raise HTTPException(status_code=409, detail="Segment is not in the training pool")
 
+    old_label = segment.effective_label
+
     if body.action == "corrected":
-        # Validate label
         lbl = await db.execute(
             select(Label).where(Label.name == body.corrected_label, Label.is_active == True)
         )
@@ -91,17 +96,22 @@ async def submit_researcher_review(
         if segment.review_status == "consensus_open":
             segment.review_status = "training_pool"
 
-    rr = ResearcherReview(
-        id=uuid.uuid4(),
-        segment_id=segment_id,
-        researcher_id=current_user.id,
-        action=body.action,
-        corrected_label=body.corrected_label if body.action == "corrected" else None,
+        change_source = "researcher_correction"
+    else:
+        change_source = "researcher_confirm"
+
+    change = await record_label_change(
+        db,
+        segment_id=segment.id,
+        change_source=change_source,
+        old_label=old_label,
+        new_label=segment.effective_label,
+        changed_by_user_id=current_user.id,
     )
-    db.add(rr)
+
     await db.commit()
-    await db.refresh(rr)
-    return ResearcherReviewOut.model_validate(rr)
+    await db.refresh(change)
+    return LabelChangeOut.model_validate(change)
 
 
 @router.post("/retrain", status_code=status.HTTP_201_CREATED)
@@ -135,9 +145,7 @@ async def get_export_stats(
     _: User = Depends(require_researcher),
 ):
     """Statistics shown on the export screen."""
-    from app.models.consensus_vote import ConsensusVote
 
-    # Total in pool
     total = await db.execute(
         select(func.count()).where(
             Segment.review_status.in_({"training_pool", "consensus_open"}),
@@ -146,7 +154,6 @@ async def get_export_stats(
     )
     total_in_pool = total.scalar_one()
 
-    # Label distribution
     dist_result = await db.execute(
         select(Segment.effective_label, func.count().label("n"))
         .where(Segment.review_status.in_({"training_pool", "consensus_open"}))
@@ -154,26 +161,21 @@ async def get_export_stats(
     )
     label_distribution = {row.effective_label or "unknown": row.n for row in dist_result}
 
-    # Consensus flips = disagree-won consensus rounds (approximate: segments whose
-    # effective_label != model_label and pool_entry_reason is not 'manual')
+    # Direct counts from the audit log — no more heuristics against segment columns
     flips = await db.execute(
-        select(func.count()).where(
-            Segment.effective_label != Segment.model_label,
-            Segment.pool_entry_reason != "manual",
-            Segment.review_status.in_({"training_pool", "consensus_open"}),
+        select(func.count()).select_from(LabelChange).where(
+            LabelChange.change_source == "consensus_flip"
         )
     )
     consensus_flips = flips.scalar_one()
 
-    # Researcher corrections
     corrections = await db.execute(
-        select(func.count()).select_from(ResearcherReview).where(
-            ResearcherReview.action == "corrected"
+        select(func.count()).select_from(LabelChange).where(
+            LabelChange.change_source == "researcher_correction"
         )
     )
     researcher_corrections = corrections.scalar_one()
 
-    # Added in last 7 days
     week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     recent = await db.execute(
         select(func.count()).where(

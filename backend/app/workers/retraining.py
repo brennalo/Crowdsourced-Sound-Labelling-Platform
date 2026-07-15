@@ -12,7 +12,12 @@ def trigger_retrain_job(self, retraining_job_id: str):
     Updates retraining_job status in DB throughout.
     """
     import asyncio
-    asyncio.run(_trigger_retrain_job(retraining_job_id))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(_trigger_retrain_job(retraining_job_id))
+    finally:
+        loop.close()
 
 
 async def _trigger_retrain_job(retraining_job_id: str):

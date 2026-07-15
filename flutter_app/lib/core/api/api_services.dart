@@ -21,8 +21,10 @@ class AuthService {
     return AuthToken.fromJson(res.data);
   }
 
-  Future<AuthToken> login({required String email, required String password}) async {
-    final res = await _dio.post('/auth/login', data: {'email': email, 'password': password});
+  Future<AuthToken> login(
+      {required String email, required String password}) async {
+    final res = await _dio
+        .post('/auth/login', data: {'email': email, 'password': password});
     return AuthToken.fromJson(res.data);
   }
 
@@ -39,6 +41,29 @@ class LabelService {
   Future<List<AppLabel>> fetchLabels() async {
     final res = await _dio.get('/labels/');
     return (res.data as List).map((j) => AppLabel.fromJson(j)).toList();
+  }
+
+  /// Researcher-only — includes inactive labels.
+  Future<List<AppLabel>> fetchAllLabels() async {
+    final res = await _dio.get('/labels/all');
+    return (res.data as List).map((j) => AppLabel.fromJson(j)).toList();
+  }
+
+  /// Researcher-only — add a new label to the taxonomy.
+  Future<AppLabel> createLabel(
+      {required String name, required String displayName}) async {
+    final res = await _dio.post('/labels/', data: {
+      'name': name,
+      'display_name': displayName,
+    });
+    return AppLabel.fromJson(res.data);
+  }
+
+  /// Researcher-only — activate or deactivate a label (soft delete).
+  Future<AppLabel> setLabelActive(String labelId, bool isActive) async {
+    final res =
+        await _dio.patch('/labels/$labelId', data: {'is_active': isActive});
+    return AppLabel.fromJson(res.data);
   }
 }
 
@@ -62,8 +87,8 @@ class RecordingService {
       if (lat != null) 'location_lat': lat.toString(),
       if (lng != null) 'location_lng': lng.toString(),
     });
-    final res = await _dio.post('/recordings/', data: formData,
-        options: Options(contentType: 'multipart/form-data'));
+    final res = await _dio.post('/recordings/',
+        data: formData, options: Options(contentType: 'multipart/form-data'));
     return Recording.fromJson(res.data);
   }
 
@@ -91,7 +116,8 @@ class SegmentService {
   }
 
   Future<Segment> updateOwnLabel(String segmentId, String label) async {
-    final res = await _dio.patch('/segments/my/$segmentId/label', data: {'label': label});
+    final res = await _dio
+        .patch('/segments/my/$segmentId/label', data: {'label': label});
     return Segment.fromJson(res.data);
   }
 
@@ -136,8 +162,10 @@ class ConsensusService {
     await _dio.post('/consensus/report/$segmentId');
   }
 
-  Future<Map<String, dynamic>> castVote(String segmentId, String verdict) async {
-    final res = await _dio.post('/consensus/vote/$segmentId', data: {'verdict': verdict});
+  Future<Map<String, dynamic>> castVote(
+      String segmentId, String verdict) async {
+    final res = await _dio
+        .post('/consensus/vote/$segmentId', data: {'verdict': verdict});
     return res.data as Map<String, dynamic>;
   }
 }

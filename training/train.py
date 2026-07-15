@@ -55,13 +55,13 @@ def load_frugalai_dataset():
 
 
 async def load_gcs_records() -> list[dict]:
-    """Fetch all manually annotated non-silent segments from DB."""
+    """Fetch all training_pool segments with an authoritative label from DB.
+    (annotations table has been removed — effective_label on segments is now
+    the single source of truth for training/export.)"""
     from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
     from sqlalchemy import select
-    from sqlalchemy.orm import joinedload
     import sys
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
-    from app.models.annotation import Annotation
     from app.models.segment import Segment
 
     engine = create_async_engine(settings.database_url)
@@ -69,19 +69,16 @@ async def load_gcs_records() -> list[dict]:
 
     async with Session() as db:
         result = await db.execute(
-            select(Annotation, Segment)
-            .join(Segment, Annotation.segment_id == Segment.id)
-            .where(
-                Annotation.source == "manual",
+            select(Segment).where(
+                Segment.review_status == "training_pool",
+                Segment.effective_label.isnot(None),
                 Segment.is_silent == False,
             )
         )
-        rows = result.all()
+        segments = result.scalars().all()
 
     await engine.dispose()
-    return [{"gcs_path": seg.gcs_path, "label": ann.label} for ann, seg in rows]
-
-
+    return [{"gcs_path": seg.gcs_path, "label": seg.effective_label} for seg in segments]
 # ──────────────────────────────────────────────
 # Training
 # ──────────────────────────────────────────────

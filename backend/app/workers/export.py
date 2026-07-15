@@ -5,7 +5,13 @@ from app.workers.celery_app import celery_app
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
 def run_export_job(self, export_job_id: str):
     import asyncio
-    asyncio.run(_run_export_job(export_job_id))
+    # Create a brand new event loop each time — never reuse
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(_run_export_job(export_job_id))
+    finally:
+        loop.close()
 
 
 async def _run_export_job(export_job_id: str):
@@ -14,7 +20,6 @@ async def _run_export_job(export_job_id: str):
     from sqlalchemy.orm import joinedload
     from app.database import AsyncSessionLocal
     from app.models.export_job import ExportJob
-    from app.models.annotation import Annotation
     from app.models.segment import Segment
     from app.services.export import build_export_zip
 
@@ -27,24 +32,24 @@ async def _run_export_job(export_job_id: str):
             return
 
         try:
-            # Fetch all manually annotated, non-silent segments
-            ann_result = await db.execute(
-                select(Annotation, Segment)
-                .join(Segment, Annotation.segment_id == Segment.id)
-                .where(
-                    Annotation.source == "manual",
+            # Training export: authoritative label set, effective_label is the
+            # single source of truth (annotations table has been removed)
+            seg_result = await db.execute(
+                select(Segment).where(
+                    Segment.review_status == "training_pool",
+                    Segment.effective_label.isnot(None),
                     Segment.is_silent == False,
                 )
             )
-            rows = ann_result.all()
+            segments = seg_result.scalars().all()
 
             annotated_segments = [
                 {
-                    "segment_id": str(annotation.id),
+                    "segment_id": str(segment.id),
                     "gcs_path": segment.gcs_path,
-                    "label": annotation.label,
+                    "label": segment.effective_label,
                 }
-                for annotation, segment in rows
+                for segment in segments
             ]
 
             if not annotated_segments:

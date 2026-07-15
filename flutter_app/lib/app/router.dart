@@ -11,6 +11,7 @@ import '../features/training_pool/screens/training_pool_screen.dart';
 import '../features/researcher/screens/researcher_review_screen.dart';
 import '../features/export/screens/export_screen.dart';
 import '../shell_screen.dart';
+import '../features/labels/screens/labels_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authProvider);
@@ -52,6 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: '/review',
               builder: (_, __) => const ResearcherReviewScreen()),
           GoRoute(path: '/export', builder: (_, __) => const ExportScreen()),
+          GoRoute(path: '/labels', builder: (_, __) => const LabelsScreen()),
         ],
       ),
     ],

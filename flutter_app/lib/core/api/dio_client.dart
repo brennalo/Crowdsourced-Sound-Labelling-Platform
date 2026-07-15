@@ -10,6 +10,7 @@ Dio buildDioClient() {
   final dio = Dio(BaseOptions(
     baseUrl: AppConfig.baseUrl,
     connectTimeout: AppConfig.httpTimeout,
+    sendTimeout: AppConfig.uploadTimeout,
     receiveTimeout: AppConfig.httpTimeout,
     headers: {'Content-Type': 'application/json'},
   ));

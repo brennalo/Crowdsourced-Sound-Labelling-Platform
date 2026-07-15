@@ -14,6 +14,7 @@ from app.models.segment import Segment
 from app.models.consensus_vote import ConsensusVote
 from app.schemas.segment import ConsensusSegmentOut, ConsensusVoteCreate, ConsensusVoteOut
 from app.auth import get_current_user
+from app.services.label_change_service import record_label_change
 import uuid
 
 router = APIRouter(prefix="/consensus", tags=["consensus"])
@@ -156,11 +157,20 @@ async def cast_vote(
         final_label = segment.effective_label
     elif disagree_n >= CONSENSUS_REQUIRED:
         # Label wrong — flip and return to training_pool
+        old_label = segment.effective_label
         flipped = OPPOSITE.get(segment.effective_label or "", segment.effective_label)
         segment.effective_label = flipped
         segment.review_status = "training_pool"
         consensus_reached = True
         final_label = flipped
+        await record_label_change(
+            db,
+            segment_id=segment.id,
+            change_source="consensus_flip",
+            old_label=old_label,
+            new_label=flipped,
+            changed_by_user_id=current_user.id,
+        )
 
     await db.commit()
     await db.refresh(vote)

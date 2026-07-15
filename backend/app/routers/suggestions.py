@@ -14,6 +14,7 @@ from app.models.retraining_job import RetrainingJob
 from app.schemas.segment import SegmentOut, SuggestionReviewCreate
 from app.auth import get_current_user
 from app.services.active_learning import count_rejections_since_last_retrain, should_trigger_retrain
+from app.services.label_change_service import record_label_change
 from app.workers.retraining import trigger_retrain_job
 import uuid
 
@@ -73,6 +74,19 @@ async def review_suggestion(
         rejection = True
 
     segment.review_status = "training_pool"
+
+    if rejection:
+        # old_label = what was rejected (the model's suggestion), not the prior
+        # effective_label (which was still null at this point)
+        await record_label_change(
+            db,
+            segment_id=segment.id,
+            change_source="contributor_reject",
+            old_label=segment.model_label,
+            new_label=segment.effective_label,
+            changed_by_user_id=current_user.id,
+        )
+
     await db.commit()
     await db.refresh(segment)
 

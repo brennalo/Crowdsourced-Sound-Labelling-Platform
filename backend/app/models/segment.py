@@ -38,6 +38,5 @@ class Segment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     recording: Mapped["Recording"] = relationship(back_populates="segments")
-    annotations: Mapped[list["Annotation"]] = relationship(back_populates="segment")
     consensus_votes: Mapped[list["ConsensusVote"]] = relationship(back_populates="segment")
-    researcher_reviews: Mapped[list["ResearcherReview"]] = relationship(back_populates="segment")
+    label_changes: Mapped[list["LabelChange"]] = relationship(back_populates="segment")

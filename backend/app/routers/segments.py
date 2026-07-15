@@ -17,6 +17,17 @@ VALID_STATUSES = {
     "excluded_other", "training_pool", "consensus_open",
 }
 
+@router.get("/debug")
+async def debug_segments(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Segment).where(Segment.user_id == current_user.id)
+    )
+    segments = result.scalars().all()
+    return [{"id": str(s.id), "review_status": s.review_status, "user_id": str(s.user_id)} for s in segments]
+
 
 @router.get("/my", response_model=list[MySegmentOut])
 async def list_my_segments(
@@ -32,7 +43,7 @@ async def list_my_segments(
     """
     query = (
         select(Segment, Recording.recorded_at.label("recording_recorded_at"))
-        .join(Recording, Recording.id == Segment.recording_id)
+        .outerjoin(Recording, Recording.id == Segment.recording_id)
         .where(Segment.user_id == current_user.id, Segment.is_silent == False)
     )
 

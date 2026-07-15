@@ -10,7 +10,12 @@ HIGH_CONFIDENCE_THRESHOLD = 0.75  # segments at or above → suggestion_pending
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=10)
 def run_segmentation(self, recording_id: str, gcs_raw_path: str, user_id: str):
     import asyncio
-    asyncio.run(_run_segmentation(recording_id, gcs_raw_path, user_id))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(_run_segmentation(recording_id, gcs_raw_path, user_id))
+    finally:
+        loop.close()
 
 
 async def _run_segmentation(recording_id: str, gcs_raw_path: str, user_id: str):

@@ -7,15 +7,24 @@ import 'api_services.dart';
 // ── Services ──────────────────────────────────────────────────
 
 final dioProvider = Provider<Dio>((ref) => buildDioClient());
-final authServiceProvider = Provider((ref) => AuthService(ref.watch(dioProvider)));
-final labelServiceProvider = Provider((ref) => LabelService(ref.watch(dioProvider)));
-final recordingServiceProvider = Provider((ref) => RecordingService(ref.watch(dioProvider)));
-final segmentServiceProvider = Provider((ref) => SegmentService(ref.watch(dioProvider)));
-final suggestionServiceProvider = Provider((ref) => SuggestionService(ref.watch(dioProvider)));
-final consensusServiceProvider = Provider((ref) => ConsensusService(ref.watch(dioProvider)));
-final trainingPoolServiceProvider = Provider((ref) => TrainingPoolService(ref.watch(dioProvider)));
-final researcherServiceProvider = Provider((ref) => ResearcherService(ref.watch(dioProvider)));
-final exportServiceProvider = Provider((ref) => ExportService(ref.watch(dioProvider)));
+final authServiceProvider =
+    Provider((ref) => AuthService(ref.watch(dioProvider)));
+final labelServiceProvider =
+    Provider((ref) => LabelService(ref.watch(dioProvider)));
+final recordingServiceProvider =
+    Provider((ref) => RecordingService(ref.watch(dioProvider)));
+final segmentServiceProvider =
+    Provider((ref) => SegmentService(ref.watch(dioProvider)));
+final suggestionServiceProvider =
+    Provider((ref) => SuggestionService(ref.watch(dioProvider)));
+final consensusServiceProvider =
+    Provider((ref) => ConsensusService(ref.watch(dioProvider)));
+final trainingPoolServiceProvider =
+    Provider((ref) => TrainingPoolService(ref.watch(dioProvider)));
+final researcherServiceProvider =
+    Provider((ref) => ResearcherService(ref.watch(dioProvider)));
+final exportServiceProvider =
+    Provider((ref) => ExportService(ref.watch(dioProvider)));
 
 // ── Auth ──────────────────────────────────────────────────────
 
@@ -29,8 +38,10 @@ class AuthState {
   bool get isAuthenticated => user != null;
   bool get isResearcher => user?.isResearcher ?? false;
 
-  AuthState copyWith({User? user, bool? isLoading, String? error}) =>
-      AuthState(user: user ?? this.user, isLoading: isLoading ?? this.isLoading, error: error);
+  AuthState copyWith({User? user, bool? isLoading, String? error}) => AuthState(
+      user: user ?? this.user,
+      isLoading: isLoading ?? this.isLoading,
+      error: error);
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -57,19 +68,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await saveToken(result.accessToken);
       state = AuthState(user: result.user);
     } on DioException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.response?.data?['detail'] ?? 'Login failed');
+      state = state.copyWith(
+          isLoading: false,
+          error: e.response?.data?['detail'] ?? 'Login failed');
     }
   }
 
-  Future<void> register(String email, String password, String? displayName, {String role = 'contributor'}) async {
+  Future<void> register(String email, String password, String? displayName,
+      {String role = 'contributor'}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final result = await _auth.register(
-          email: email, password: password, displayName: displayName, role: role);
+          email: email,
+          password: password,
+          displayName: displayName,
+          role: role);
       await saveToken(result.accessToken);
       state = AuthState(user: result.user);
     } on DioException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.response?.data?['detail'] ?? 'Registration failed');
+      state = state.copyWith(
+          isLoading: false,
+          error: e.response?.data?['detail'] ?? 'Registration failed');
     }
   }
 
@@ -88,15 +107,25 @@ final labelsProvider = FutureProvider<List<AppLabel>>((ref) {
   return ref.watch(labelServiceProvider).fetchLabels();
 });
 
+// Researcher-only — includes inactive labels, used on the Manage Labels screen.
+final allLabelsProvider = FutureProvider.autoDispose<List<AppLabel>>((ref) {
+  return ref.watch(labelServiceProvider).fetchAllLabels();
+});
+
 // ── My Clips ──────────────────────────────────────────────────
 
-final mySegmentsProvider = FutureProvider.family<List<Segment>, String>((ref, reviewStatus) {
-  return ref.watch(segmentServiceProvider).listMySegments(reviewStatus: reviewStatus);
+final mySegmentsProvider =
+    FutureProvider.family<List<Segment>, String>((ref, reviewStatus) {
+  return ref
+      .watch(segmentServiceProvider)
+      .listMySegments(reviewStatus: reviewStatus);
 });
 
 // All own segments regardless of status (for "All" tab)
 final allMySegmentsProvider = FutureProvider<List<Segment>>((ref) {
-  return ref.watch(segmentServiceProvider).listMySegments(sort: 'confidence_asc');
+  return ref
+      .watch(segmentServiceProvider)
+      .listMySegments(sort: 'confidence_asc');
 });
 
 // ── Suggestion queue ──────────────────────────────────────────
@@ -113,7 +142,8 @@ final consensusOpenProvider = FutureProvider<List<Segment>>((ref) {
 
 // ── Training pool ─────────────────────────────────────────────
 
-final trainingPoolProvider = FutureProvider.family<List<Segment>, String>((ref, sort) {
+final trainingPoolProvider =
+    FutureProvider.family<List<Segment>, String>((ref, sort) {
   return ref.watch(trainingPoolServiceProvider).list(sort: sort);
 });
 

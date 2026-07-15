@@ -21,15 +21,6 @@ class SegmentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class LabelOut(BaseModel):
-    id: uuid.UUID
-    name: str
-    display_name: str
-    is_active: bool
-
-    model_config = {"from_attributes": True}
-
-
 # ── My Clips (contributor's own segments) ─────────────────────
 
 class MySegmentOut(SegmentOut):
@@ -94,14 +85,8 @@ class ResearcherReviewCreate(BaseModel):
     corrected_label: str | None = None  # required when action == "corrected"
 
 
-class ResearcherReviewOut(BaseModel):
-    id: uuid.UUID
-    segment_id: uuid.UUID
-    action: str
-    corrected_label: str | None
-    reviewed_at: datetime
-
-    model_config = {"from_attributes": True}
+# Response for POST /researcher/review/{id} is now LabelChangeOut
+# (see app.schemas.label_change) — the review is recorded as a label_changes row.
 
 
 # ── Export stats ──────────────────────────────────────────────

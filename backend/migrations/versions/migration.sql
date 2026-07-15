@@ -67,3 +67,57 @@ WHERE review_status = 'pending' AND is_silent = FALSE;
 
 -- Verify
 SELECT 'migration complete' AS status;
+
+--third time migration , deleted review table and add label_changes
+-- ============================================================
+-- Migration: label_changes audit log, drop annotations /
+--            suggestion_reviews / researcher_reviews
+-- Run once against Neon PostgreSQL
+-- ============================================================
+
+-- 1. label_changes — unified audit log replacing suggestion_reviews,
+--    researcher_reviews, and annotations.
+CREATE TABLE IF NOT EXISTS label_changes (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    segment_id          UUID NOT NULL REFERENCES segments(id),
+    changed_by_user_id  UUID REFERENCES users(id),  -- nullable: no actor for system-driven changes
+    change_source       TEXT NOT NULL CHECK (
+        change_source IN (
+            'contributor_reject',
+            'consensus_flip',
+            'researcher_correction',
+            'researcher_confirm'
+        )
+    ),
+    old_label           TEXT,
+    new_label           TEXT,
+    changed_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_label_changes_segment    ON label_changes (segment_id);
+CREATE INDEX IF NOT EXISTS idx_label_changes_changed_at ON label_changes (changed_at);
+CREATE INDEX IF NOT EXISTS idx_label_changes_source     ON label_changes (change_source);
+
+-- 2. Backfill label_changes from researcher_reviews before dropping it.
+--    old_label is unknown historically (researcher_reviews never recorded it),
+--    so it's left NULL for these backfilled rows — only new_label is accurate.
+INSERT INTO label_changes (segment_id, changed_by_user_id, change_source, old_label, new_label, changed_at)
+SELECT
+    segment_id,
+    researcher_id,
+    CASE WHEN action = 'corrected' THEN 'researcher_correction' ELSE 'researcher_confirm' END,
+    NULL,
+    corrected_label,
+    reviewed_at
+FROM researcher_reviews;
+
+-- 3. Drop tables replaced by label_changes.
+--    suggestion_reviews and annotations were already unused in application
+--    code before this migration (confirmed via grep) — dropping is safe.
+DROP TABLE IF EXISTS researcher_reviews;
+DROP TABLE IF EXISTS suggestion_reviews;
+DROP TABLE IF EXISTS annotations;
+
+-- Verify
+SELECT 'migration complete' AS status;
+SELECT count(*) AS backfilled_label_changes FROM label_changes;

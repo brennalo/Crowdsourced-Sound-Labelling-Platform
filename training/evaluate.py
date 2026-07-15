@@ -61,25 +61,26 @@ def evaluate(session: ort.InferenceSession, loader: DataLoader) -> dict:
 
 
 async def load_gcs_records() -> list[dict]:
+    """Fetch all training_pool segments with an authoritative label from DB."""
     from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
     from sqlalchemy import select
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
-    from app.models.annotation import Annotation
     from app.models.segment import Segment
 
     engine = create_async_engine(settings.database_url)
     Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with Session() as db:
         result = await db.execute(
-            select(Annotation, Segment)
-            .join(Segment, Annotation.segment_id == Segment.id)
-            .where(Annotation.source == "manual", Segment.is_silent == False)
+            select(Segment).where(
+                Segment.review_status == "training_pool",
+                Segment.effective_label.isnot(None),
+                Segment.is_silent == False,
+            )
         )
-        rows = result.all()
+        segments = result.scalars().all()
     await engine.dispose()
-    return [{"gcs_path": seg.gcs_path, "label": ann.label} for ann, seg in rows]
-
+    return [{"gcs_path": seg.gcs_path, "label": seg.effective_label} for seg in segments]
 
 def main():
     parser = argparse.ArgumentParser()

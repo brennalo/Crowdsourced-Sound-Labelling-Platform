@@ -17,7 +17,6 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     recordings: Mapped[list["Recording"]] = relationship(back_populates="user")
-    annotations: Mapped[list["Annotation"]] = relationship(back_populates="user")
     consensus_votes: Mapped[list["ConsensusVote"]] = relationship(back_populates="voter")
-    researcher_reviews: Mapped[list["ResearcherReview"]] = relationship(back_populates="researcher")
+    label_changes: Mapped[list["LabelChange"]] = relationship(back_populates="changed_by")
     export_jobs: Mapped[list["ExportJob"]] = relationship(back_populates="requested_by_user")
