@@ -217,3 +217,37 @@ class ExportStats {
         addedLast7Days: j['added_last_7_days'],
       );
 }
+
+class RetrainingJob {
+  final String id;
+  final DateTime triggeredAt;
+  final String triggeredBy;
+  final String status;
+  final int? rejectionCount;
+  final DateTime? completedAt;
+  final String? errorLog;
+
+  RetrainingJob({
+    required this.id,
+    required this.triggeredAt,
+    required this.triggeredBy,
+    required this.status,
+    this.rejectionCount,
+    this.completedAt,
+    this.errorLog,
+  });
+
+  factory RetrainingJob.fromJson(Map<String, dynamic> json) => RetrainingJob(
+        id: json['id'] as String,
+        triggeredAt: DateTime.parse(json['triggered_at'] as String),
+        triggeredBy: json['triggered_by'] as String,
+        status: json['status'] as String,
+        rejectionCount: json['rejection_count'] as int?,
+        completedAt: json['completed_at'] != null
+            ? DateTime.parse(json['completed_at'] as String)
+            : null,
+        errorLog: json['error_log'] as String?,
+      );
+
+  bool get isDone => status == 'done';
+}

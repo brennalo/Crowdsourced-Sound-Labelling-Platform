@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '/core/api/providers.dart';
 import '/core/models/models.dart';
+import '/app/theme.dart';
 
 class RecordingsListScreen extends ConsumerWidget {
   const RecordingsListScreen({super.key});
@@ -76,11 +77,11 @@ class _RecordingCard extends StatelessWidget {
     IconData statusIcon;
     switch (recording.status) {
       case 'done':
-        statusColor = Colors.green;
+        statusColor = AppColors.canopy;
         statusIcon = Icons.check_circle_outline;
         break;
       case 'processing':
-        statusColor = Colors.orange;
+        statusColor = AppColors.amber;
         statusIcon = Icons.hourglass_top_outlined;
         break;
       default:

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../app/theme.dart';
 
 class ResearcherReviewScreen extends ConsumerStatefulWidget {
   const ResearcherReviewScreen({super.key});
@@ -12,7 +13,8 @@ class ResearcherReviewScreen extends ConsumerStatefulWidget {
       _ResearcherReviewScreenState();
 }
 
-class _ResearcherReviewScreenState extends ConsumerState<ResearcherReviewScreen> {
+class _ResearcherReviewScreenState
+    extends ConsumerState<ResearcherReviewScreen> {
   final _player = AudioPlayer();
   String? _playingId;
 
@@ -37,7 +39,8 @@ class _ResearcherReviewScreenState extends ConsumerState<ResearcherReviewScreen>
   Future<void> _loadQueue() async {
     setState(() => _loadingQueue = true);
     try {
-      final segments = await ref.read(researcherServiceProvider).getReviewQueue();
+      final segments =
+          await ref.read(researcherServiceProvider).getReviewQueue();
       setState(() => _queue = segments);
     } catch (e) {
       _snack('Error loading queue: $e');
@@ -69,7 +72,8 @@ class _ResearcherReviewScreenState extends ConsumerState<ResearcherReviewScreen>
   Future<void> _confirm(String segmentId) async {
     setState(() => _processing.add(segmentId));
     try {
-      await ref.read(researcherServiceProvider)
+      await ref
+          .read(researcherServiceProvider)
           .submitReview(segmentId: segmentId, action: 'confirmed');
       _removeAndRefresh(segmentId);
     } catch (e) {
@@ -151,7 +155,8 @@ class _ResearcherReviewScreenState extends ConsumerState<ResearcherReviewScreen>
                       Icon(Icons.check_circle_outline,
                           size: 64, color: theme.colorScheme.primary),
                       const SizedBox(height: 16),
-                      Text('All caught up!', style: theme.textTheme.titleMedium),
+                      Text('All caught up!',
+                          style: theme.textTheme.titleMedium),
                       const SizedBox(height: 8),
                       Text('No unreviewed segments in the training pool.',
                           style: theme.textTheme.bodyMedium
@@ -170,12 +175,13 @@ class _ResearcherReviewScreenState extends ConsumerState<ResearcherReviewScreen>
                     Container(
                       width: double.infinity,
                       color: theme.colorScheme.surfaceContainerHigh,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       child: Text(
                         '${_queue.length} randomly sampled segment${_queue.length == 1 ? '' : 's'}. '
                         'Confirm correct labels or correct wrong ones.',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ),
                     Expanded(
@@ -257,7 +263,8 @@ class _ReviewCard extends StatelessWidget {
                     style: theme.textTheme.labelSmall
                         ?.copyWith(color: theme.colorScheme.outline)),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: isChainsaw
                         ? theme.colorScheme.errorContainer
@@ -268,7 +275,9 @@ class _ReviewCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isChainsaw ? Icons.warning_amber_outlined : Icons.forest_outlined,
+                        isChainsaw
+                            ? Icons.warning_amber_outlined
+                            : Icons.forest_outlined,
                         size: 14,
                         color: isChainsaw
                             ? theme.colorScheme.onErrorContainer
@@ -316,7 +325,8 @@ class _ReviewCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                      style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.canopy),
                       onPressed: onConfirm,
                       icon: const Icon(Icons.check, size: 18),
                       label: const Text('Confirm'),

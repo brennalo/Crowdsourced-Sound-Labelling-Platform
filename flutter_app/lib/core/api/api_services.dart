@@ -218,6 +218,11 @@ class ResearcherService {
     final res = await _dio.get('/researcher/stats');
     return ExportStats.fromJson(res.data);
   }
+
+  Future<List<RetrainingJob>> listRetrainingJobs() async {
+    final res = await _dio.get('/model/retraining-jobs');
+    return (res.data as List).map((j) => RetrainingJob.fromJson(j)).toList();
+  }
 }
 
 class ExportService {

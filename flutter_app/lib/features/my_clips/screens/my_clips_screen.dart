@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../app/theme.dart';
 
 const _tabs = [
   (label: 'All', status: null),
@@ -538,7 +539,8 @@ class SegmentCard extends ConsumerWidget {
                     Text(
                       '${(segment.modelConfidence! * 100).toStringAsFixed(1)}%',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: _confColor(segment.modelConfidence!),
+                        color: _confColor(
+                            segment.modelConfidence!, theme.colorScheme),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -589,10 +591,10 @@ class SegmentCard extends ConsumerWidget {
     );
   }
 
-  Color _confColor(double c) {
-    if (c >= 0.85) return Colors.green;
-    if (c >= 0.75) return Colors.orange;
-    return Colors.red;
+  Color _confColor(double c, ColorScheme scheme) {
+    if (c >= 0.85) return AppColors.canopy;
+    if (c >= 0.75) return AppColors.amber;
+    return scheme.error;
   }
 }
 
@@ -668,7 +670,7 @@ class _SuggestionActions extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.canopy),
             onPressed: onAccept,
             icon: const Icon(Icons.check, size: 18),
             label: const Text('Accept'),
@@ -688,9 +690,9 @@ class _StatusBadge extends StatelessWidget {
     final theme = Theme.of(context);
     final (text, color) = switch (segment.reviewStatus) {
       'annotation_pending' => ('Needs Label', theme.colorScheme.error),
-      'suggestion_pending' => ('Needs Review', Colors.orange),
-      'training_pool' => ('In Pool', Colors.green),
-      'consensus_open' => ('Disputed', Colors.purple),
+      'suggestion_pending' => ('Needs Review', AppColors.amber),
+      'training_pool' => ('In Pool', AppColors.canopy),
+      'consensus_open' => ('Disputed', AppColors.bark),
       'excluded_other' => ('Other', theme.colorScheme.outline),
       _ => (segment.reviewStatus, theme.colorScheme.outline),
     };

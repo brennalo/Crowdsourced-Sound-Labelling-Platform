@@ -87,9 +87,9 @@ def build_export_zip(
         # Write labels CSV
         csv_buffer = io.StringIO()
         writer = csv.writer(csv_buffer)
-        writer.writerow(["filename", "label"])
+        writer.writerow(["file_name", "label"])
         writer.writerows(csv_rows)
-        zf.writestr("labels.csv", csv_buffer.getvalue())
+        zf.writestr("metadata.csv", csv_buffer.getvalue())
 
     zip_buffer.seek(0)
     gcs_zip_path = f"exports/{job_id}/dataset.zip"

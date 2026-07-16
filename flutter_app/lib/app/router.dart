@@ -10,14 +10,23 @@ import '../features/consensus/screens/consensus_screen.dart';
 import '../features/training_pool/screens/training_pool_screen.dart';
 import '../features/researcher/screens/researcher_review_screen.dart';
 import '../features/export/screens/export_screen.dart';
-import '../shell_screen.dart';
 import '../features/labels/screens/labels_screen.dart';
+import '../shell_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authProvider);
 
+  // Router is rebuilt whenever auth state changes, so pick the initial
+  // location dynamically from the *current* auth state rather than
+  // hardcoding one role's home screen — otherwise a researcher briefly
+  // lands on the contributor's /record before manually navigating away.
+  String initialLocation() {
+    if (!auth.isAuthenticated) return '/login';
+    return auth.isResearcher ? '/review' : '/record';
+  }
+
   return GoRouter(
-    initialLocation: '/record',
+    initialLocation: initialLocation(),
     redirect: (context, state) {
       final isAuth = auth.isAuthenticated;
       final onAuth = state.matchedLocation == '/login' ||

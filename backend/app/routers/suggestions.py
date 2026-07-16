@@ -14,7 +14,7 @@ from app.models.retraining_job import RetrainingJob
 from app.schemas.segment import SegmentOut, SuggestionReviewCreate
 from app.auth import get_current_user
 from app.services.active_learning import count_rejections_since_last_retrain, should_trigger_retrain
-from app.services.label_change_service import record_label_change
+from app.services.label_change import record_label_change
 from app.workers.retraining import trigger_retrain_job
 import uuid
 

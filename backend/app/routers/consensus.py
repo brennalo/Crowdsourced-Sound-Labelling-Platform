@@ -14,7 +14,7 @@ from app.models.segment import Segment
 from app.models.consensus_vote import ConsensusVote
 from app.schemas.segment import ConsensusSegmentOut, ConsensusVoteCreate, ConsensusVoteOut
 from app.auth import get_current_user
-from app.services.label_change_service import record_label_change
+from app.services.label_change import record_label_change
 import uuid
 
 router = APIRouter(prefix="/consensus", tags=["consensus"])

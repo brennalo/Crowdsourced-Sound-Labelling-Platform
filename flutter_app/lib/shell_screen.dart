@@ -65,6 +65,7 @@ class _ContributorShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final outline = Theme.of(context).colorScheme.outline;
 
     return Scaffold(
       appBar: AppBar(
@@ -90,11 +91,9 @@ class _ContributorShell extends ConsumerWidget {
                     Text(user?.name ?? '',
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                     Text(user?.email ?? '',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey)),
+                        style: TextStyle(fontSize: 12, color: outline)),
                     Text('Contributor',
-                        style:
-                            const TextStyle(fontSize: 11, color: Colors.grey)),
+                        style: TextStyle(fontSize: 11, color: outline)),
                   ],
                 ),
               ),
@@ -136,22 +135,22 @@ class _ContributorShell extends ConsumerWidget {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.mic_outlined),
-            selectedIcon: Icon(Icons.mic),
+            selectedIcon: Icon(Icons.mic_rounded),
             label: 'Record',
           ),
           NavigationDestination(
-            icon: Icon(Icons.audio_file_outlined),
-            selectedIcon: Icon(Icons.audio_file),
+            icon: Icon(Icons.eco_outlined),
+            selectedIcon: Icon(Icons.eco_rounded),
             label: 'My Clips',
           ),
           NavigationDestination(
-            icon: Icon(Icons.how_to_vote_outlined),
-            selectedIcon: Icon(Icons.how_to_vote),
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups_rounded),
             label: 'Consensus',
           ),
           NavigationDestination(
-            icon: Icon(Icons.dataset_outlined),
-            selectedIcon: Icon(Icons.dataset),
+            icon: Icon(Icons.forest_outlined),
+            selectedIcon: Icon(Icons.forest_rounded),
             label: 'Pool',
           ),
         ],
@@ -186,6 +185,7 @@ class _ResearcherShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final outline = Theme.of(context).colorScheme.outline;
 
     return Scaffold(
       appBar: AppBar(
@@ -211,11 +211,9 @@ class _ResearcherShell extends ConsumerWidget {
                     Text(user?.name ?? '',
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                     Text(user?.email ?? '',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey)),
+                        style: TextStyle(fontSize: 12, color: outline)),
                     Text('Researcher',
-                        style:
-                            const TextStyle(fontSize: 11, color: Colors.grey)),
+                        style: TextStyle(fontSize: 11, color: outline)),
                   ],
                 ),
               ),
@@ -257,22 +255,22 @@ class _ResearcherShell extends ConsumerWidget {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.fact_check_outlined),
-            selectedIcon: Icon(Icons.fact_check),
+            selectedIcon: Icon(Icons.fact_check_rounded),
             label: 'Review',
           ),
           NavigationDestination(
-            icon: Icon(Icons.dataset_outlined),
-            selectedIcon: Icon(Icons.dataset),
+            icon: Icon(Icons.forest_outlined),
+            selectedIcon: Icon(Icons.forest_rounded),
             label: 'Pool',
           ),
           NavigationDestination(
             icon: Icon(Icons.download_outlined),
-            selectedIcon: Icon(Icons.download),
+            selectedIcon: Icon(Icons.download_rounded),
             label: 'Export',
           ),
           NavigationDestination(
-            icon: Icon(Icons.sell_outlined),
-            selectedIcon: Icon(Icons.sell),
+            icon: Icon(Icons.label_outline_rounded),
+            selectedIcon: Icon(Icons.label_rounded),
             label: 'Labels',
           ),
         ],

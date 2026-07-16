@@ -1,7 +1,5 @@
 import uuid
 from datetime import datetime
-from backend.app.models.segment import Segment
-from backend.app.models.user import User
 from sqlalchemy import String, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../app/theme.dart';
 
 class ConsensusScreen extends ConsumerStatefulWidget {
   const ConsensusScreen({super.key});
@@ -46,7 +47,8 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
   Future<void> _castVote(String segmentId, String verdict) async {
     setState(() => _processing.add(segmentId));
     try {
-      final result = await ref.read(consensusServiceProvider).castVote(segmentId, verdict);
+      final result =
+          await ref.read(consensusServiceProvider).castVote(segmentId, verdict);
       setState(() => _voted.add(segmentId));
       ref.invalidate(consensusOpenProvider);
       if (result['consensus_reached'] == true) {
@@ -84,18 +86,21 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (segments) {
-          final pending = segments.where((s) => !_voted.contains(s.id)).toList();
+          final pending =
+              segments.where((s) => !_voted.contains(s.id)).toList();
 
           if (pending.isEmpty) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.how_to_vote_outlined, size: 64, color: theme.colorScheme.outline),
+                  Icon(Icons.how_to_vote_outlined,
+                      size: 64, color: theme.colorScheme.outline),
                   const SizedBox(height: 16),
                   Text('No open disputes', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  Text('When a segment is reported, it appears here for voting.',
+                  Text(
+                      'When a segment is reported, it appears here for voting.',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(color: theme.colorScheme.outline)),
@@ -109,7 +114,8 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
               Container(
                 width: double.infinity,
                 color: theme.colorScheme.surfaceContainerHigh,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Text(
                   '${pending.length} open dispute${pending.length == 1 ? '' : 's'}. '
                   '"Agree" = current label is correct. "Disagree" = label is wrong.',
@@ -196,7 +202,8 @@ class _ConsensusCard extends StatelessWidget {
                     style: theme.textTheme.labelSmall
                         ?.copyWith(color: theme.colorScheme.outline)),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: isChainsaw
                         ? theme.colorScheme.errorContainer
@@ -207,7 +214,9 @@ class _ConsensusCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isChainsaw ? Icons.warning_amber_outlined : Icons.forest_outlined,
+                        isChainsaw
+                            ? Icons.warning_amber_outlined
+                            : Icons.forest_outlined,
                         size: 14,
                         color: isChainsaw
                             ? theme.colorScheme.onErrorContainer
@@ -235,7 +244,7 @@ class _ConsensusCard extends StatelessWidget {
                 _VotePill(
                     icon: Icons.thumb_up_outlined,
                     count: agreeN,
-                    color: Colors.green,
+                    color: AppColors.canopy,
                     label: 'Agree'),
                 const SizedBox(width: 12),
                 _VotePill(
@@ -258,7 +267,9 @@ class _ConsensusCard extends StatelessWidget {
                     ? agreeN / required
                     : disagreeN / required,
                 minHeight: 5,
-                color: agreeN >= disagreeN ? Colors.green : theme.colorScheme.error,
+                color: agreeN >= disagreeN
+                    ? AppColors.canopy
+                    : theme.colorScheme.error,
                 backgroundColor: theme.colorScheme.surfaceContainerHighest,
               ),
             ),
@@ -283,7 +294,8 @@ class _ConsensusCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                      style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.canopy),
                       onPressed: onAgree,
                       icon: const Icon(Icons.thumb_up_outlined, size: 18),
                       label: const Text('Agree'),
@@ -319,7 +331,8 @@ class _VotePill extends StatelessWidget {
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
         Text('$count $label',
-            style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                fontSize: 12, color: color, fontWeight: FontWeight.w600)),
       ],
     );
   }

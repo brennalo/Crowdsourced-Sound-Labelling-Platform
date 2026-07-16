@@ -16,9 +16,9 @@ from app.models.label import Label
 from app.models.label_change import LabelChange
 from app.models.retraining_job import RetrainingJob
 from app.schemas.segment import SegmentOut, ResearcherReviewCreate, ExportStatsOut
-from app.schemas.label_change import LabelChangeOut
+from app.schemas.label import LabelChangeOut
 from app.auth import require_researcher
-from app.services.label_change_service import record_label_change
+from app.services.label_change import record_label_change
 from app.workers.retraining import trigger_retrain_job
 import uuid
 

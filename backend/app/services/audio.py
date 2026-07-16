@@ -71,9 +71,11 @@ def generate_signed_url(gcs_path: str, expiration_seconds: int = 3600) -> str:
 def is_silent(audio: np.ndarray, threshold_dbfs: float) -> bool:
     """Return True if RMS energy of clip is below threshold_dbfs."""
     rms = np.sqrt(np.mean(audio ** 2))
+    print(f"[is_silent] rms={rms:.1f} threshold={threshold_dbfs}")
     if rms == 0:
         return True
     dbfs = 20 * np.log10(rms)
+    print(f"[is_silent] dbfs={dbfs:.1f} threshold={threshold_dbfs}")
     return dbfs < threshold_dbfs
 
 

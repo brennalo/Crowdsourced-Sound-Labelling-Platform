@@ -52,6 +52,7 @@ def export_to_onnx(model: torch.nn.Module, output_path: Path) -> Path:
             "mel_spectrogram": {0: "batch_size", 3: "time_frames"},
             "logits": {0: "batch_size"},
         },
+        dynamo=False,
     )
     print(f"[export] ONNX model saved to {onnx_path}")
     return onnx_path

@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.label import LabelChange
+from app.models.label_change import LabelChange
 
 
 async def record_label_change(

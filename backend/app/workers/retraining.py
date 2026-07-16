@@ -1,6 +1,9 @@
 import uuid
 from app.workers.celery_app import celery_app
 from app.config import get_settings
+import asyncio
+import google.auth
+import google.auth.transport.requests
 
 settings = get_settings()
 
@@ -82,14 +85,31 @@ async def _trigger_retrain_job(retraining_job_id: str):
             raise e
 
 
+# async def _get_gcp_access_token() -> str:
+#     """Fetch GCP access token from metadata server (works on Cloud Run)."""
+#     import httpx
+#     async with httpx.AsyncClient() as client:
+#         response = await client.get(
+#             "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+#             headers={"Metadata-Flavor": "Google"},
+#             timeout=5,
+#         )
+#         response.raise_for_status()
+#         return response.json()["access_token"]
+
 async def _get_gcp_access_token() -> str:
-    """Fetch GCP access token from metadata server (works on Cloud Run)."""
-    import httpx
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
-            headers={"Metadata-Flavor": "Google"},
-            timeout=5,
+    """Fetch a GCP access token using Application Default Credentials.
+    Locally: uses the service account key file at GOOGLE_APPLICATION_CREDENTIALS.
+    On Cloud Run: automatically uses the metadata server instead — same code, no branching.
+    """
+
+    def _get_token_sync() -> str:
+        credentials, _ = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
-        response.raise_for_status()
-        return response.json()["access_token"]
+        credentials.refresh(google.auth.transport.requests.Request())
+        return credentials.token
+
+    # google-auth's refresh() is synchronous/blocking — run in a thread
+    # so it doesn't block the event loop other tasks are running on.
+    return await asyncio.to_thread(_get_token_sync)

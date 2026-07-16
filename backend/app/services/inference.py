@@ -1,4 +1,6 @@
 import io
+import os
+import tempfile
 import numpy as np
 import librosa
 import onnxruntime as ort
@@ -43,8 +45,16 @@ class InferenceService:
     def load_model(self, gcs_path: str) -> None:
         """Download ONNX model from GCS and load into onnxruntime."""
         blob = get_bucket().blob(gcs_path)
-        model_bytes = blob.download_as_bytes()
-        self._session = ort.InferenceSession(model_bytes, providers=["CPUExecutionProvider"])
+        tmp_dir = tempfile.mkdtemp()
+        local_path = os.path.join(tmp_dir, "model.onnx")
+        blob.download_to_filename(local_path)
+
+        # If the model uses external data, the companion file must also be
+        # downloaded and placed in the same directory with matching name.
+        # Check bucket for a sibling blob (e.g. gcs_path + "_data" or ".data")
+        # and download it here too if it exists.
+
+        self._session = ort.InferenceSession(local_path, providers=["CPUExecutionProvider"])
         self._model_path = gcs_path
         print(f"[inference] Loaded model from {gcs_path}")
 

@@ -42,13 +42,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 64),
-              Icon(Icons.forest, size: 64, color: theme.colorScheme.primary),
-              const SizedBox(height: 16),
+              Center(
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.forest_rounded,
+                      size: 48, color: theme.colorScheme.primary),
+                ),
+              ),
+              const SizedBox(height: 20),
               Text(
                 'Forest Sound Platform',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
               Text(

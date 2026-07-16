@@ -5,6 +5,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     # Database
     database_url: str  # postgresql+asyncpg://user:pass@host/db
+    is_celery_worker:bool = False  # True if running as a Celery worker, False for FastAPI app
 
     # Auth
     secret_key: str

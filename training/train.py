@@ -28,6 +28,9 @@ import numpy as np
 from config import get_training_settings
 from model import build_model, count_parameters
 from dataset import FrugalAIDataset, GCSSegmentDataset, CombinedDataset
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy import select
+from db_scheme_model_part import RetrainingJob  # local to training/, no cross-directory import
 
 settings = get_training_settings()
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -40,7 +43,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def load_frugalai_dataset():
     from datasets import load_dataset, Audio
     print("[data] Loading rfcx/frugalai from HuggingFace...")
-    hf = load_dataset("rfcx/frugalai", trust_remote_code=True)
+    hf = load_dataset("rfcx/frugalai", trust_remote_code=True,token=os.environ.get("HF_TOKEN"))
     train_split = hf["train"] if "train" in hf else hf[list(hf.keys())[0]]
 
     train_split = train_split.cast_column('audio', Audio(decode=False))
@@ -58,11 +61,7 @@ async def load_gcs_records() -> list[dict]:
     """Fetch all training_pool segments with an authoritative label from DB.
     (annotations table has been removed — effective_label on segments is now
     the single source of truth for training/export.)"""
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-    from sqlalchemy import select
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
-    from app.models.segment import Segment
+    from db_scheme_model_part import Segment  # local to training/, no cross-directory import
 
     engine = create_async_engine(settings.database_url)
     Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -176,11 +175,6 @@ def train(dataset, output_dir: Path) -> dict:
 # ──────────────────────────────────────────────
 
 async def update_retraining_job(job_id: str, status: str, model_version_id: str | None = None, error: str | None = None):
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-    from sqlalchemy import select
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
-    from app.models.retraining_job import RetrainingJob
 
     engine = create_async_engine(settings.database_url)
     Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

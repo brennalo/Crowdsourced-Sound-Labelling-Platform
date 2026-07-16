@@ -65,6 +65,7 @@ async def _run_segmentation(recording_id: str, gcs_raw_path: str, user_id: str):
                 review_status = "annotation_pending"
 
                 if inference.is_loaded():
+                    print ("inference is loaded, running prediction")
                     try:
                         prediction = inference.predict(seg["audio"], sr)
                         model_label = prediction["label"]

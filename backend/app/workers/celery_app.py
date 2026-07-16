@@ -1,5 +1,6 @@
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import worker_process_init
 from app.config import get_settings
 
 settings = get_settings()
@@ -30,3 +31,27 @@ celery_app.conf.update(
         },
     },
 )
+@worker_process_init.connect
+def load_model_on_worker_start(**kwargs):
+    import asyncio
+    from sqlalchemy import select
+    from app.database import AsyncSessionLocal, engine  # import the engine too
+    from app.models.model_version import ModelVersion
+    from app.services.inference import load_active_model_from_gcs
+
+    async def _load():
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(ModelVersion).where(ModelVersion.is_active == True)
+            )
+            active_model = result.scalar_one_or_none()
+            if active_model:
+                load_active_model_from_gcs(active_model.gcs_model_path)
+                print(f"[worker startup] Loaded model {active_model.version_tag}")
+            else:
+                print("[worker startup] No active model registered — inference disabled")
+
+    try:
+        asyncio.run(_load())
+    except Exception as e:
+        print(f"[worker startup] Warning: could not load model — {e}")

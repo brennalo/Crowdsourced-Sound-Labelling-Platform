@@ -163,6 +163,10 @@ final myExportsProvider = FutureProvider<List<ExportJob>>((ref) {
   return ref.watch(exportServiceProvider).listMyExports();
 });
 
+final retrainingJobsProvider = FutureProvider<List<RetrainingJob>>((ref) {
+  return ref.watch(researcherServiceProvider).listRetrainingJobs();
+});
+
 // ── Recordings ────────────────────────────────────────────────
 
 final myRecordingsProvider = FutureProvider<List<Recording>>((ref) {

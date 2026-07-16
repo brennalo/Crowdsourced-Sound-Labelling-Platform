@@ -6,7 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.model_version import ModelVersion
 from app.models.retraining_job import RetrainingJob
-from app.auth import require_admin
+from app.auth import require_admin, require_researcher
 import uuid
 
 router = APIRouter(prefix="/model", tags=["model"])
@@ -40,7 +40,7 @@ class RetrainingJobOut(BaseModel):
 @router.get("/active", response_model=ModelVersionOut)
 async def get_active_model(
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_admin),
+    _: object = Depends(require_researcher),
 ):
     result = await db.execute(select(ModelVersion).where(ModelVersion.is_active == True))
     model = result.scalar_one_or_none()
@@ -52,7 +52,7 @@ async def get_active_model(
 @router.get("/versions", response_model=list[ModelVersionOut])
 async def list_model_versions(
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_admin),
+    _: object = Depends(require_researcher),
 ):
     result = await db.execute(select(ModelVersion).order_by(ModelVersion.created_at.desc()))
     return [ModelVersionOut.model_validate(m) for m in result.scalars().all()]
@@ -61,7 +61,7 @@ async def list_model_versions(
 @router.get("/retraining-jobs", response_model=list[RetrainingJobOut])
 async def list_retraining_jobs(
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_admin),
+    _: object = Depends(require_researcher),
 ):
     result = await db.execute(select(RetrainingJob).order_by(RetrainingJob.triggered_at.desc()).limit(20))
     return [RetrainingJobOut.model_validate(j) for j in result.scalars().all()]
@@ -70,7 +70,7 @@ async def list_retraining_jobs(
 @router.post("/trigger-retrain", response_model=RetrainingJobOut, status_code=201)
 async def trigger_manual_retrain(
     db: AsyncSession = Depends(get_db),
-    _: object = Depends(require_admin),
+    _: object = Depends(require_researcher),
 ):
     """Admin-only manual retrain trigger — bypasses rejection threshold."""
     # Prevent duplicate jobs

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../app/theme.dart';
 
 class TrainingPoolScreen extends ConsumerStatefulWidget {
   const TrainingPoolScreen({super.key});
@@ -116,8 +117,11 @@ class _TrainingPoolScreenState extends ConsumerState<TrainingPoolScreen> {
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'time_desc', child: Text('Newest first')),
               PopupMenuItem(value: 'time_asc', child: Text('Oldest first')),
-              PopupMenuItem(value: 'confidence_desc', child: Text('High confidence first')),
-              PopupMenuItem(value: 'confidence_asc', child: Text('Low confidence first')),
+              PopupMenuItem(
+                  value: 'confidence_desc',
+                  child: Text('High confidence first')),
+              PopupMenuItem(
+                  value: 'confidence_asc', child: Text('Low confidence first')),
             ],
           ),
           IconButton(
@@ -135,11 +139,14 @@ class _TrainingPoolScreenState extends ConsumerState<TrainingPoolScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.dataset_outlined, size: 64, color: theme.colorScheme.outline),
+                  Icon(Icons.dataset_outlined,
+                      size: 64, color: theme.colorScheme.outline),
                   const SizedBox(height: 16),
-                  Text('Training pool is empty', style: theme.textTheme.titleMedium),
+                  Text('Training pool is empty',
+                      style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  Text('Segments appear here once contributors label or accept clips.',
+                  Text(
+                      'Segments appear here once contributors label or accept clips.',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(color: theme.colorScheme.outline)),
@@ -223,14 +230,17 @@ class _PoolCard extends StatelessWidget {
                 const Spacer(),
                 if (segment.consensusOpen)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.12),
+                      color: AppColors.bark.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Text('Disputed',
                         style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w600, color: Colors.purple)),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.bark)),
                   ),
               ],
             ),
@@ -240,7 +250,8 @@ class _PoolCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: isChainsaw
                         ? theme.colorScheme.errorContainer
@@ -251,7 +262,9 @@ class _PoolCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isChainsaw ? Icons.warning_amber_outlined : Icons.forest_outlined,
+                        isChainsaw
+                            ? Icons.warning_amber_outlined
+                            : Icons.forest_outlined,
                         size: 14,
                         color: isChainsaw
                             ? theme.colorScheme.onErrorContainer
@@ -314,10 +327,12 @@ class _PoolCard extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange,
-                    side: const BorderSide(color: Colors.orange),
+                    foregroundColor: AppColors.bark,
+                    side: const BorderSide(color: AppColors.bark),
                   ),
-                  onPressed: alreadyReported || segment.consensusOpen ? null : onReport,
+                  onPressed: alreadyReported || segment.consensusOpen
+                      ? null
+                      : onReport,
                   icon: const Icon(Icons.flag_outlined, size: 18),
                   label: Text(segment.consensusOpen
                       ? 'Already Disputed'
@@ -368,8 +383,9 @@ class _OverrideSheet extends StatelessWidget {
             const SizedBox(height: 16),
             ...labels.map((lbl) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                      lbl.name == 'chainsaw' ? Icons.warning_amber_outlined : Icons.forest_outlined),
+                  leading: Icon(lbl.name == 'chainsaw'
+                      ? Icons.warning_amber_outlined
+                      : Icons.forest_outlined),
                   title: Text(lbl.displayName),
                   onTap: () => onSelect(lbl.name),
                 )),

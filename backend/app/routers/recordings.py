@@ -31,8 +31,12 @@ async def upload_recording(
     audio_bytes = await file.read()
     if len(audio_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty file")
-
+    
     recording_id = uuid.uuid4()
+    # with open(f"/tmp/debug_{recording_id}.wav", "wb") as f:
+    #     f.write(audio_bytes)
+    # print(f"[debug] wrote {len(audio_bytes)} bytes, content_type={file.content_type}, to /tmp/debug_{recording_id}.wav")
+
     gcs_path = await upload_raw_audio_to_gcs(
         audio_bytes=audio_bytes,
         recording_id=recording_id,
