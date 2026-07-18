@@ -30,6 +30,12 @@ celery_app.conf.update(
             "schedule": crontab(hour=2, minute=0),
         },
     },
+    broker_use_ssl={
+        'ssl_cert_reqs': 'CERT_NONE'  # Upstash-managed cert, not verifying against a local CA bundle
+    },
+    redis_backend_use_ssl={
+        'ssl_cert_reqs': 'CERT_NONE'
+    },
 )
 @worker_process_init.connect
 def load_model_on_worker_start(**kwargs):

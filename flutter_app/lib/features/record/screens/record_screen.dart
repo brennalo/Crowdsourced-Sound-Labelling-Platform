@@ -6,8 +6,10 @@ import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import '/core/api/providers.dart';
-import '/app/theme.dart';
 import '../widgets/forest_hero.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
+import '/core/utils/blob_fetch.dart' as blob_utils;
 
 class RecordScreen extends ConsumerStatefulWidget {
   const RecordScreen({super.key});
@@ -20,7 +22,10 @@ class _RecordScreenState extends ConsumerState<RecordScreen> {
   final _recorder = AudioRecorder();
   bool _isRecording = false;
   bool _isUploading = false;
-  String? _recordedPath;
+  String? _recordedPath; //native only
+  Uint8List? _recordedBytes; //web only
+  final List<int> _webChunks = [];
+  StreamSubscription<Uint8List>? _streamSub;
   Duration _elapsed = Duration.zero;
   Timer? _timer;
   String? _statusMessage;
@@ -33,6 +38,18 @@ class _RecordScreenState extends ConsumerState<RecordScreen> {
     super.dispose();
   }
 
+  Future<AudioEncoder?> _pickSupportedEncoder() async {
+    const candidates = [
+      AudioEncoder.wav,
+      AudioEncoder.aacLc,
+      AudioEncoder.opus,
+    ];
+    for (final enc in candidates) {
+      if (await _recorder.isEncoderSupported(enc)) return enc;
+    }
+    return null;
+  }
+
   Future<void> _startRecording() async {
     final micStatus = await Permission.microphone.request();
     if (!micStatus.isGranted) {
@@ -40,20 +57,37 @@ class _RecordScreenState extends ConsumerState<RecordScreen> {
       return;
     }
 
-    final dir = await getTemporaryDirectory();
-    final path =
-        '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+    final encoder = await _pickSupportedEncoder();
+    if (encoder == null) {
+      _showStatus('No supported audio encoder found on this browser',
+          isError: true);
+      return;
+    }
 
-    await _recorder.start(
-      const RecordConfig(
-          encoder: AudioEncoder.wav, sampleRate: 22050, numChannels: 1),
-      path: path,
-    );
+    final config =
+        RecordConfig(encoder: encoder, sampleRate: 22050, numChannels: 1);
+
+    try {
+      if (kIsWeb) {
+        await _recorder.start(config,
+            path:
+                'recording'); // path ignored on web, blob URL returned by stop()
+      } else {
+        final dir = await getTemporaryDirectory();
+        final path =
+            '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+        await _recorder.start(config, path: path);
+      }
+    } catch (e) {
+      _showStatus('Failed to start recording: $e', isError: true);
+      return;
+    }
 
     setState(() {
       _isRecording = true;
       _elapsed = Duration.zero;
       _recordedPath = null;
+      _recordedBytes = null;
       _statusMessage = null;
     });
 
@@ -64,32 +98,49 @@ class _RecordScreenState extends ConsumerState<RecordScreen> {
 
   Future<void> _stopRecording() async {
     _timer?.cancel();
-    final path = await _recorder.stop();
-    setState(() {
-      _isRecording = false;
-      _recordedPath = path;
-    });
-    if (path != null) _showStatus('Recording saved. Tap upload to submit.');
+    final result = await _recorder.stop();
+    setState(() => _isRecording = false);
+
+    if (result == null) return;
+
+    try {
+      if (kIsWeb) {
+        final bytes = await blob_utils.fetchBlobBytes(result);
+        setState(() => _recordedBytes = bytes);
+      } else {
+        setState(() => _recordedPath = result);
+      }
+      _showStatus('Recording saved. Tap upload to submit.');
+    } catch (e) {
+      _showStatus('Failed to process recording: $e', isError: true);
+    }
   }
 
   Future<void> _uploadRecording() async {
-    if (_recordedPath == null) return;
+    if (_recordedPath == null && _recordedBytes == null) return;
     setState(() {
       _isUploading = true;
       _statusMessage = null;
     });
 
     try {
-      await ref.read(recordingServiceProvider).uploadRecording(
-            audioFile: File(_recordedPath!),
-            recordedAt: DateTime.now(),
-          );
-      // Invalidate recordings + segments so the forest grows immediately
+      if (kIsWeb) {
+        await ref.read(recordingServiceProvider).uploadRecordingBytes(
+              bytes: _recordedBytes!,
+              recordedAt: DateTime.now(),
+            );
+      } else {
+        await ref.read(recordingServiceProvider).uploadRecording(
+              audioFile: File(_recordedPath!),
+              recordedAt: DateTime.now(),
+            );
+      }
       ref.invalidate(myRecordingsProvider);
       ref.invalidate(allMySegmentsProvider);
       _showStatus('Uploaded! Your forest just grew a little.');
       setState(() {
         _recordedPath = null;
+        _recordedBytes = null;
       });
     } catch (e) {
       _showStatus('Upload failed: $e', isError: true);
@@ -236,7 +287,8 @@ class _RecordScreenState extends ConsumerState<RecordScreen> {
           const SizedBox(height: 32),
 
           // ── Upload button ────────────────────────────────────
-          if (_recordedPath != null && !_isRecording)
+          if ((_recordedPath != null || _recordedBytes != null) &&
+              !_isRecording)
             FilledButton.icon(
               onPressed: _isUploading ? null : _uploadRecording,
               icon: _isUploading

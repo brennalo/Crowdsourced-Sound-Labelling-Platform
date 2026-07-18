@@ -1,9 +1,9 @@
 class AppConfig {
   // Change to your Cloud Run URL in production
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080', // Android emulator localhost
-  );
+  static const String baseUrl = String.fromEnvironment('API_BASE_URL',
+      //defaultValue: 'http://10.0.2.2:8080', // Android emulator localhost
+      defaultValue:
+          'https://forest-sound-api-841974142704.us-central1.run.app');
 
   //static const String baseUrl = 'baseUrl';
 

@@ -1,11 +1,11 @@
 import uuid
 from app.workers.celery_app import celery_app
 from app.config import get_settings
+import subprocess
 
 settings = get_settings()
 
 HIGH_CONFIDENCE_THRESHOLD = 0.75  # segments at or above → suggestion_pending
-
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=10)
 def run_segmentation(self, recording_id: str, gcs_raw_path: str, user_id: str):

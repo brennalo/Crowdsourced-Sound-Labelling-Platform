@@ -7,6 +7,11 @@ from google.cloud import storage
 from google.cloud.storage import Blob
 from datetime import timedelta
 from app.config import get_settings
+import os
+import tempfile
+import subprocess
+import google.auth
+from google.auth.transport import requests as gauth_requests
 
 settings = get_settings()
 _gcs_client: storage.Client | None = None
@@ -45,11 +50,30 @@ def upload_segment_to_gcs(audio_array: np.ndarray, sample_rate: int, gcs_path: s
 
 
 def download_audio_from_gcs(gcs_path: str) -> tuple[np.ndarray, int]:
-    """Download WAV from GCS, return (audio_array, sample_rate)."""
+    """Download audio from GCS, normalize to WAV via ffmpeg, return (audio_array, sample_rate)."""
     blob: Blob = get_bucket().blob(gcs_path)
     audio_bytes = blob.download_as_bytes()
-    buffer = io.BytesIO(audio_bytes)
-    audio, sr = librosa.load(buffer, sr=settings.sample_rate, mono=True)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        input_path = os.path.join(tmpdir, "input")
+        output_path = os.path.join(tmpdir, "output.wav")
+
+        with open(input_path, "wb") as f:
+            f.write(audio_bytes)
+
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", input_path,
+                "-ar", str(settings.sample_rate), "-ac", "1",
+                "-sample_fmt", "s16",
+                output_path,
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        audio, sr = librosa.load(output_path, sr=settings.sample_rate, mono=True)
+
     return audio, sr
 
 
@@ -61,10 +85,17 @@ def delete_from_gcs(gcs_path: str) -> None:
 def generate_signed_url(gcs_path: str, expiration_seconds: int = 3600) -> str:
     """Generate a signed URL for client-side audio playback."""
     blob: Blob = get_bucket().blob(gcs_path)
+
+    credentials, project = google.auth.default()
+    auth_request = gauth_requests.Request()
+    credentials.refresh(auth_request)
+
     return blob.generate_signed_url(
         expiration=timedelta(seconds=expiration_seconds),
         method="GET",
         version="v4",
+        service_account_email=credentials.service_account_email,
+        access_token=credentials.token,
     )
 
 

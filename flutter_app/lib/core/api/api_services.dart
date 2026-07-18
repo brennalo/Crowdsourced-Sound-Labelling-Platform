@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import '../models/models.dart';
 
@@ -91,6 +92,36 @@ class RecordingService {
         data: formData, options: Options(contentType: 'multipart/form-data'));
     return Recording.fromJson(res.data);
   }
+
+  /// Web path: upload raw bytes captured from the recorder's blob output.
+  Future<Recording> uploadRecordingBytes({
+    required Uint8List bytes,
+    DateTime? recordedAt,
+    double? lat,
+    double? lng,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: 'recording.wav',
+        contentType: DioMediaType('audio', 'wav'),
+      ),
+      if (recordedAt != null) 'recorded_at': recordedAt.toIso8601String(),
+      if (lat != null) 'location_lat': lat.toString(),
+      if (lng != null) 'location_lng': lng.toString(),
+    });
+    final res = await _dio.post('/recordings/',
+        data: formData, options: Options(contentType: 'multipart/form-data'));
+    return Recording.fromJson(res.data);
+  }
+
+  // Future<Uint8List> fetchBlobBytes(String blobUrl) async {
+  //   final res = await _dio.get<List<int>>(
+  //     blobUrl,
+  //     options: Options(responseType: ResponseType.bytes),
+  //   );
+  //   return Uint8List.fromList(res.data!);
+  // }
 
   Future<List<Recording>> listMyRecordings() async {
     final res = await _dio.get('/recordings/');

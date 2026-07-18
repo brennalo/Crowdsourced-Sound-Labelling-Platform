@@ -1,0 +1,11 @@
+[
+  {
+    "origin": [
+      "https://crowdsourced-sound-labelling.web.app",
+      "https://crowdsourced-sound-labelling.firebaseapp.com"
+    ],
+    "method": ["GET"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]
