@@ -34,3 +34,15 @@ class Segment(Base):
     review_status: Mapped[str] = mapped_column(String, nullable=False)
     effective_label: Mapped[str | None] = mapped_column(String)
     is_silent: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
+
+class ModelVersion(Base):
+    __tablename__ = "model_versions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    version_tag: Mapped[str] = mapped_column(String, nullable=False)
+    gcs_model_path: Mapped[str] = mapped_column(String, nullable=False)
+    trigger_reason: Mapped[str] = mapped_column(String, nullable=False)
+    training_samples: Mapped[int] = mapped_column(nullable=False)
+    accuracy: Mapped[float] = mapped_column(nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False)

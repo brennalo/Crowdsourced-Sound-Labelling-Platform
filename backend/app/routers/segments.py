@@ -42,7 +42,8 @@ async def list_my_segments(
     Default sort: confidence ascending (low-confidence / needs attention first).
     """
     query = (
-        select(Segment, Recording.recorded_at.label("recording_recorded_at"))
+        select(Segment, Recording.recorded_at.label("recording_recorded_at"),
+               Recording.total_segments.label("recording_total_segments"))
         .outerjoin(Recording, Recording.id == Segment.recording_id)
         .where(Segment.user_id == current_user.id, Segment.is_silent == False)
     )
@@ -66,9 +67,13 @@ async def list_my_segments(
     rows = result.all()
 
     output = []
-    for segment, rec_recorded_at in rows:
+    for segment, rec_recorded_at, rec_total_segments in rows:
         d = SegmentOut.model_validate(segment).model_dump()
-        output.append(MySegmentOut(**d, recording_recorded_at=rec_recorded_at))
+        output.append(MySegmentOut(
+            **d,
+            recording_recorded_at=rec_recorded_at,
+            recording_total_segments=rec_total_segments,
+        ))
     return output
 
 

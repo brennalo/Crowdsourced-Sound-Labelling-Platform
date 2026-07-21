@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../core/widgets/account_menu_button.dart';
 import '../../../app/theme.dart';
 
 class ResearcherReviewScreen extends ConsumerStatefulWidget {
@@ -143,6 +144,9 @@ class _ResearcherReviewScreenState
         title: const Text('Review Queue'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadQueue),
+          const SizedBox(width: 4),
+          const AccountMenuButton(),
+          const SizedBox(width: 8),
         ],
       ),
       body: _loadingQueue
@@ -242,11 +246,15 @@ class _ReviewCard extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${segment.startSec.toStringAsFixed(1)}s – ${segment.endSec.toStringAsFixed(1)}s',
-                  style: theme.textTheme.bodyMedium,
+                Expanded(
+                  child: Text(
+                    segment.displayLabel,
+                    style: theme.textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 Text(
                   segment.poolEntryReason == 'auto_7day'
                       ? 'auto-accepted'

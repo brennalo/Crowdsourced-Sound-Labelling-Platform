@@ -1,16 +1,1 @@
-{
-  "hosting": {
-    "public": "build/web",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  }
-}
+{"hosting":{"public":"build/web","ignore":["firebase.json","**/.*","**/node_modules/**"],"rewrites":[{"source":"**","destination":"/index.html"}]},"flutter":{"platforms":{"android":{"default":{"projectId":"crowdsourced-sound-labelling","appId":"1:841974142704:android:0b0b00d400cb9139fb9435","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"crowdsourced-sound-labelling","configurations":{"android":"1:841974142704:android:0b0b00d400cb9139fb9435","ios":"1:841974142704:ios:1f4eac2f420189f0fb9435","web":"1:841974142704:web:061dc3037c5d0e9cfb9435"}}}}}}

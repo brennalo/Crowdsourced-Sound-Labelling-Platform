@@ -57,39 +57,52 @@ def pad_or_trim(audio: np.ndarray, target_samples: int) -> np.ndarray:
 TARGET_SAMPLES = int(settings.segment_length_sec * settings.sample_rate)
 
 
+import random
+
 class FrugalAIDataset(Dataset):
-    """
-    Wraps the rfcx/frugalai HuggingFace dataset.
-    Expected columns: 'audio' (dict with 'array' and 'sampling_rate'), 'label' (int or str)
-
-    Usage:
-        from datasets import load_dataset
-        hf_dataset = load_dataset("rfcx/frugalai", split="train")
-        dataset = FrugalAIDataset(hf_dataset, label_map={"clear": "environment", "chainsaw": "chainsaw"})
-    """
-
     def __init__(
         self,
         hf_dataset,
         label_map: dict[str, str] | None = None,
         transform: Callable | None = None,
+        max_per_class: int | None = None,
+        seed: int = 42,
     ):
         self.dataset = hf_dataset
-        from datasets import Audio 
+        from datasets import Audio
         self.dataset = self.dataset.cast_column('audio', Audio(decode=False))
         self.label_map = label_map or {}
         self.transform = transform
-        # Filter to only samples with labels in our label set
+        self.max_per_class = max_per_class
+        self.seed = seed
         self._valid_indices = self._filter_valid()
 
     def _filter_valid(self) -> list[int]:
-        valid = []
+        # Group indices by resolved label instead of a flat valid list
+        by_label: dict[str, list[int]] = {label: [] for label in LABEL_TO_IDX}
         for i, sample in enumerate(self.dataset):
             raw_label = str(sample.get("label", "")).lower()
             mapped = self.label_map.get(raw_label, raw_label)
             if mapped in LABEL_TO_IDX:
-                valid.append(i)
-        print(f"[FrugalAIDataset] {len(valid)}/{len(self.dataset)} samples with valid labels")
+                by_label[mapped].append(i)
+
+        total_available = sum(len(v) for v in by_label.values())
+
+        if self.max_per_class is not None:
+            rng = random.Random(self.seed)
+            capped = []
+            for label, indices in by_label.items():
+                rng.shuffle(indices)
+                take = indices[: self.max_per_class]
+                capped.extend(take)
+                print(f"[FrugalAIDataset] {label}: {len(take)}/{len(indices)} sampled")
+            rng.shuffle(capped)  # avoid label-sorted ordering feeding into batches
+            valid = capped
+        else:
+            valid = [i for indices in by_label.values() for i in indices]
+
+        print(f"[FrugalAIDataset] {len(valid)}/{total_available} samples with valid labels"
+              + (f" (capped at {self.max_per_class}/class)" if self.max_per_class else ""))
         return valid
 
     def __len__(self) -> int:
@@ -100,7 +113,6 @@ class FrugalAIDataset(Dataset):
         audio_data = sample['audio']
 
         if isinstance(audio_data, dict):
-            # Check bytes FIRST — path key exists but file won't be present
             if 'bytes' in audio_data and audio_data['bytes'] is not None:
                 import io
                 audio, sr = librosa.load(io.BytesIO(audio_data['bytes']), sr=settings.sample_rate, mono=True)
@@ -115,9 +127,12 @@ class FrugalAIDataset(Dataset):
             import io
             audio, sr = librosa.load(io.BytesIO(audio_data), sr=settings.sample_rate, mono=True)
 
+        raw_label = str(sample.get("label", "")).lower()
+        mapped_label = self.label_map.get(raw_label, raw_label)
+        label_idx = LABEL_TO_IDX[mapped_label]
+
         audio = pad_or_trim(audio, TARGET_SAMPLES)
         return audio_to_mel_tensor(audio, settings.sample_rate), label_idx
-
 
 class GCSSegmentDataset(Dataset):
     """
@@ -184,3 +199,31 @@ class CombinedDataset(Dataset):
                 offset = idx - (self.cumulative[i - 1] if i > 0 else 0)
                 return self.datasets[i][offset]
         raise IndexError(idx)
+    
+
+class PrecomputedDataset(Dataset):
+    """
+    Wraps any (mel_tensor, label) dataset and computes+caches every item
+    once in memory, up front. Since audio_to_mel_tensor is deterministic
+    (augmentation happens separately at export time, not during training),
+    each sample only needs to be decoded and mel-transformed once instead
+    of once per epoch. Also collapses GCSSegmentDataset's per-epoch GCS
+    downloads down to a single download per sample.
+    """
+
+    def __init__(self, base_dataset: Dataset, desc: str = "dataset"):
+        n = len(base_dataset)
+        print(f"[PrecomputedDataset] Precomputing {n} items for {desc}...")
+        self._items: list[tuple[torch.Tensor, int]] = []
+        for i in range(n):
+            mel, label = base_dataset[i]
+            self._items.append((mel, label))
+            if (i + 1) % 1000 == 0 or (i + 1) == n:
+                print(f"[PrecomputedDataset] {i + 1}/{n} done")
+        print(f"[PrecomputedDataset] Cached {n} items in memory for {desc}")
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
+        return self._items[idx]

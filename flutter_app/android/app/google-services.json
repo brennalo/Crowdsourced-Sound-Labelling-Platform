@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "841974142704",
+    "project_id": "crowdsourced-sound-labelling",
+    "storage_bucket": "crowdsourced-sound-labelling.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841974142704:android:0b0b00d400cb9139fb9435",
+        "android_client_info": {
+          "package_name": "com.forestsoundplatform.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAD3soGIgPl9Nvp1aa87qVX8t_q-jGdsJo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

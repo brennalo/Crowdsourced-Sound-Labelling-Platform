@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../core/widgets/account_menu_button.dart';
 import '../../../app/theme.dart';
 
 class ConsensusScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,16 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
   String? _playingId;
   final Set<String> _processing = {};
   final Set<String> _voted = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Refetch on every visit to this tab, since it's a normal route
+    // (not a kept-alive IndexedStack tab) — this is our "on focus" refresh.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.invalidate(consensusOpenProvider);
+    });
+  }
 
   @override
   void dispose() {
@@ -48,9 +59,8 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
   Future<void> _castVote(String segmentId, String verdict) async {
     setState(() => _processing.add(segmentId));
     try {
-      final result = await ref
-          .read(consensusServiceProvider)
-          .castVote(segmentId, verdict);
+      final result =
+          await ref.read(consensusServiceProvider).castVote(segmentId, verdict);
       setState(() => _voted.add(segmentId));
       ref.invalidate(consensusOpenProvider);
       if (result['consensus_reached'] == true) {
@@ -84,6 +94,9 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(consensusOpenProvider),
           ),
+          const SizedBox(width: 4),
+          const AccountMenuButton(),
+          const SizedBox(width: 8),
         ],
       ),
       body: segmentsAsync.when(
@@ -126,7 +139,7 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
                 ),
                 child: Text(
                   '${segments.length} open dispute${segments.length == 1 ? '' : 's'}. '
-                  '"Agree" = current label is correct. "Disagree" = label is wrong.',
+                  '"Agree" = accept the proposed label. "Disagree" = keep the current one.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -136,16 +149,16 @@ class _ConsensusScreenState extends ConsumerState<ConsensusScreen> {
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: segments.length,
-                  itemBuilder:
-                      (_, i) => _ConsensusCard(
-                        segment: segments[i],
-                        isPlaying: _playingId == segments[i].id,
-                        isProcessing: _processing.contains(segments[i].id),
-                        hasVoted: _voted.contains(segments[i].id),
-                        onPlay: () => _togglePlay(segments[i].id),
-                        onAgree: () => _castVote(segments[i].id, 'agree'),
-                        onDisagree: () => _castVote(segments[i].id, 'disagree'),
-                      ),
+                  itemBuilder: (_, i) => _ConsensusCard(
+                    segment: segments[i],
+                    isPlaying: _playingId == segments[i].id,
+                    isProcessing: _processing.contains(segments[i].id),
+                    hasVoted: segments[i].userVoted ||
+                        _voted.contains(segments[i].id),
+                    onPlay: () => _togglePlay(segments[i].id),
+                    onAgree: () => _castVote(segments[i].id, 'agree'),
+                    onDisagree: () => _castVote(segments[i].id, 'disagree'),
+                  ),
                 ),
               ),
             ],
@@ -200,9 +213,13 @@ class _ConsensusCard extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${segment.startSec.toStringAsFixed(1)}s – ${segment.endSec.toStringAsFixed(1)}s',
-                  style: theme.textTheme.bodyMedium,
+                Expanded(
+                  child: Text(
+                    segment.displayLabel,
+                    style: theme.textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
               ],
             ),
@@ -223,10 +240,9 @@ class _ConsensusCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        isChainsaw
-                            ? theme.colorScheme.errorContainer
-                            : theme.colorScheme.primaryContainer,
+                    color: isChainsaw
+                        ? theme.colorScheme.errorContainer
+                        : theme.colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -237,10 +253,9 @@ class _ConsensusCard extends StatelessWidget {
                             ? Icons.warning_amber_outlined
                             : Icons.forest_outlined,
                         size: 14,
-                        color:
-                            isChainsaw
-                                ? theme.colorScheme.onErrorContainer
-                                : theme.colorScheme.onPrimaryContainer,
+                        color: isChainsaw
+                            ? theme.colorScheme.onErrorContainer
+                            : theme.colorScheme.onPrimaryContainer,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -248,10 +263,51 @@ class _ConsensusCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color:
-                              isChainsaw
-                                  ? theme.colorScheme.onErrorContainer
-                                  : theme.colorScheme.onPrimaryContainer,
+                          color: isChainsaw
+                              ? theme.colorScheme.onErrorContainer
+                              : theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Proposed label — what's actually being voted on
+            Row(
+              children: [
+                Text(
+                  'Proposed: ',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.swap_horiz_rounded,
+                        size: 14,
+                        color: theme.colorScheme.onTertiaryContainer,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        segment.proposedLabel ?? '—',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onTertiaryContainer,
                         ),
                       ),
                     ],
@@ -291,15 +347,13 @@ class _ConsensusCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value:
-                    agreeN >= disagreeN
-                        ? agreeN / required
-                        : disagreeN / required,
+                value: agreeN >= disagreeN
+                    ? agreeN / required
+                    : disagreeN / required,
                 minHeight: 5,
-                color:
-                    agreeN >= disagreeN
-                        ? AppColors.canopy
-                        : theme.colorScheme.error,
+                color: agreeN >= disagreeN
+                    ? AppColors.canopy
+                    : theme.colorScheme.error,
                 backgroundColor: theme.colorScheme.surfaceContainerHighest,
               ),
             ),

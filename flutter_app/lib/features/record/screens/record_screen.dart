@@ -6,10 +6,17 @@ import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import '/core/api/providers.dart';
+import '/core/widgets/account_menu_button.dart';
 import '../widgets/forest_hero.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import '/core/utils/blob_fetch.dart' as blob_utils;
+
+//Programmer Name : Brenna Lo
+//Program Name : record_screen.dart
+//Description : UI and stateful widget of record screen tab for contributor
+//First Written on : 2024-06-10
+//Edited on : 2024-07-18
 
 class RecordScreen extends ConsumerStatefulWidget {
   const RecordScreen({super.key});
@@ -176,7 +183,13 @@ class _RecordScreenState extends ConsumerState<RecordScreen> {
         ForestStage.forCount(recordingsCount % ForestHero.treeThreshold);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Forest')),
+      appBar: AppBar(
+        title: const Text('Your Forest'),
+        actions: const [
+          AccountMenuButton(),
+          SizedBox(width: 8),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [

@@ -69,6 +69,17 @@ async def _run_export_job(export_job_id: str):
 
             print(f"[export] Done — {gcs_zip_path}")
 
+            from app.services.push import send_push_to_user
+            await send_push_to_user(
+                db,
+                user_id=job.requested_by,
+                data={"type": "export_done", "export_job_id": export_job_id},
+                notification={
+                    "title": "Export ready",
+                    "body": "Your dataset export has finished and is ready to download.",
+                },
+            )
+
         except Exception as e:
             result = await db.execute(select(ExportJob).where(ExportJob.id == job_uuid))
             job = result.scalar_one_or_none()

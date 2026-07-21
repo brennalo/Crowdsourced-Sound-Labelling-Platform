@@ -3,6 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/api/providers.dart';
 
+// Note: this shell used to also render its own AppBar (dynamic title +
+// account menu) wrapping every tab's `child`. Since every tab screen
+// already renders its own AppBar with the correct title and its own
+// screen-specific actions, that produced two stacked app bars with
+// duplicate titles. The shell now only owns the bottom nav; the account
+// menu moved to `core/widgets/account_menu_button.dart` and is added as a
+// trailing action on each screen's own AppBar instead.
+
 class ShellScreen extends ConsumerWidget {
   final Widget child;
   const ShellScreen({super.key, required this.child});
@@ -18,38 +26,9 @@ class ShellScreen extends ConsumerWidget {
   }
 }
 
-// ── Shared logout dialog ──────────────────────────────────────
-
-Future<void> showLogoutDialog(BuildContext context, WidgetRef ref) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text('Log Out'),
-      content: const Text('Are you sure you want to log out?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Log Out'),
-        ),
-      ],
-    ),
-  );
-  if (confirmed == true) {
-    await ref.read(authProvider.notifier).logout();
-    if (context.mounted) context.go('/login');
-  }
-}
-
 // ── Contributor: Record | My Clips | Consensus | Pool ─────────
 
-class _ContributorShell extends ConsumerWidget {
+class _ContributorShell extends StatelessWidget {
   final Widget child;
   final String location;
   const _ContributorShell({required this.child, required this.location});
@@ -63,56 +42,8 @@ class _ContributorShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authProvider).user;
-    final outline = Theme.of(context).colorScheme.outline;
-
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titleFor(location)),
-        actions: [
-          PopupMenuButton<String>(
-            icon: CircleAvatar(
-              radius: 16,
-              child: Text(
-                (user?.name ?? '?')[0].toUpperCase(),
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
-            onSelected: (value) {
-              if (value == 'logout') showLogoutDialog(context, ref);
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user?.name ?? '',
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text(user?.email ?? '',
-                        style: TextStyle(fontSize: 12, color: outline)),
-                    Text('Contributor',
-                        style: TextStyle(fontSize: 11, color: outline)),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 18),
-                    SizedBox(width: 10),
-                    Text('Log Out'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _idx(location),
@@ -157,19 +88,11 @@ class _ContributorShell extends ConsumerWidget {
       ),
     );
   }
-
-  String _titleFor(String loc) {
-    if (loc.startsWith('/record')) return 'Record';
-    if (loc.startsWith('/my-clips')) return 'My Clips';
-    if (loc.startsWith('/consensus')) return 'Consensus';
-    if (loc.startsWith('/pool')) return 'Training Pool';
-    return 'Forest Sound';
-  }
 }
 
-// ── Researcher: Review | Pool | Export ────────────────────────
+// ── Researcher: Review | Pool | Export | Config ────────────────
 
-class _ResearcherShell extends ConsumerWidget {
+class _ResearcherShell extends StatelessWidget {
   final Widget child;
   final String location;
   const _ResearcherShell({required this.child, required this.location});
@@ -183,56 +106,8 @@ class _ResearcherShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authProvider).user;
-    final outline = Theme.of(context).colorScheme.outline;
-
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titleFor(location)),
-        actions: [
-          PopupMenuButton<String>(
-            icon: CircleAvatar(
-              radius: 16,
-              child: Text(
-                (user?.name ?? '?')[0].toUpperCase(),
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
-            onSelected: (value) {
-              if (value == 'logout') showLogoutDialog(context, ref);
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user?.name ?? '',
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text(user?.email ?? '',
-                        style: TextStyle(fontSize: 12, color: outline)),
-                    Text('Researcher',
-                        style: TextStyle(fontSize: 11, color: outline)),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 18),
-                    SizedBox(width: 10),
-                    Text('Log Out'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _idx(location),
@@ -269,20 +144,12 @@ class _ResearcherShell extends ConsumerWidget {
             label: 'Export',
           ),
           NavigationDestination(
-            icon: Icon(Icons.label_outline_rounded),
-            selectedIcon: Icon(Icons.label_rounded),
-            label: 'Labels',
+            icon: Icon(Icons.tune_rounded),
+            selectedIcon: Icon(Icons.tune_rounded),
+            label: 'Config',
           ),
         ],
       ),
     );
-  }
-
-  String _titleFor(String loc) {
-    if (loc.startsWith('/review')) return 'Review';
-    if (loc.startsWith('/pool')) return 'Training Pool';
-    if (loc.startsWith('/export')) return 'Export';
-    if (loc.startsWith('/labels')) return 'Manage Labels';
-    return 'Forest Sound';
   }
 }

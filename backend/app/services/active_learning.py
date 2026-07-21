@@ -2,9 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.models.label_change import LabelChange
 from app.models.retraining_job import RetrainingJob
-from app.config import get_settings
-
-settings = get_settings()
+from app.services.system_config import get_system_config
 
 
 async def count_rejections_since_last_retrain(db: AsyncSession) -> int:
@@ -40,7 +38,8 @@ async def should_trigger_retrain(db: AsyncSession, rejection_count: int) -> bool
     """
     Returns True if rejection count hits threshold AND no retrain is currently queued/running.
     """
-    if rejection_count < settings.rejection_threshold:
+    config = await get_system_config(db)
+    if rejection_count < config.rejection_threshold:
         return False
 
     in_progress = await db.execute(

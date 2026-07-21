@@ -18,6 +18,7 @@ class RecordingOut(BaseModel):
     location_lat: float | None
     location_lng: float | None
     status: str
+    total_segments: int | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

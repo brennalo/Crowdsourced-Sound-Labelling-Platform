@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../core/widgets/account_menu_button.dart';
 import '../../../app/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '/core/utils/window_open_web.dart' as window_utils;
+import '/core/utils/window_open.dart' as window_utils;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ExportScreen extends ConsumerStatefulWidget {
@@ -114,6 +115,9 @@ class _ExportScreenState extends ConsumerState<ExportScreen>
               ref.invalidate(myExportsProvider);
             },
           ),
+          const SizedBox(width: 4),
+          const AccountMenuButton(),
+          const SizedBox(width: 8),
         ],
       ),
       body: ListView(

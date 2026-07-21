@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
+import '../../../core/widgets/account_menu_button.dart';
 import '../../../app/theme.dart';
 
 class TrainingPoolScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,7 @@ class _TrainingPoolScreenState extends ConsumerState<TrainingPoolScreen> {
   String _sort = 'time_desc';
   final Set<String> _actioning = {};
   final Set<String> _reported = {};
+  final Set<String> _pickingFor = {};
 
   @override
   void dispose() {
@@ -46,18 +48,35 @@ class _TrainingPoolScreenState extends ConsumerState<TrainingPoolScreen> {
   }
 
   // ── Contributor: report segment (open consensus) ──────────
+  // Instead of a dialog, "Report Wrong Label" expands the card in place
+  // into a chip picker. Tapping a chip submits the report directly.
 
-  Future<void> _reportSegment(String segmentId) async {
-    setState(() => _actioning.add(segmentId));
+  void _togglePicker(String segmentId) {
+    setState(() {
+      if (_pickingFor.contains(segmentId)) {
+        _pickingFor.remove(segmentId);
+      } else {
+        _pickingFor.add(segmentId);
+      }
+    });
+  }
+
+  Future<void> _submitReport(Segment segment, String proposedLabel) async {
+    setState(() {
+      _pickingFor.remove(segment.id);
+      _actioning.add(segment.id);
+    });
     try {
-      await ref.read(consensusServiceProvider).reportSegment(segmentId);
-      setState(() => _reported.add(segmentId));
+      await ref
+          .read(consensusServiceProvider)
+          .reportSegment(segment.id, proposedLabel);
+      setState(() => _reported.add(segment.id));
       ref.invalidate(trainingPoolProvider(_sort));
       _snack('Reported — segment is now open for consensus voting.');
     } catch (e) {
       _snack('Error: $e');
     } finally {
-      if (mounted) setState(() => _actioning.remove(segmentId));
+      if (mounted) setState(() => _actioning.remove(segment.id));
     }
   }
 
@@ -103,6 +122,7 @@ class _TrainingPoolScreenState extends ConsumerState<TrainingPoolScreen> {
     final theme = Theme.of(context);
     final isResearcher = ref.watch(authProvider).isResearcher;
     final poolAsync = ref.watch(trainingPoolProvider(_sort));
+    final labelsAsync = ref.watch(labelsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -128,6 +148,9 @@ class _TrainingPoolScreenState extends ConsumerState<TrainingPoolScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(trainingPoolProvider(_sort)),
           ),
+          const SizedBox(width: 4),
+          const AccountMenuButton(),
+          const SizedBox(width: 8),
         ],
       ),
       body: poolAsync.when(
@@ -166,8 +189,12 @@ class _TrainingPoolScreenState extends ConsumerState<TrainingPoolScreen> {
                 isActioning: _actioning.contains(segments[i].id),
                 alreadyReported: _reported.contains(segments[i].id),
                 isResearcher: isResearcher,
+                showPicker: _pickingFor.contains(segments[i].id),
+                labelsAsync: labelsAsync,
                 onPlay: () => _togglePlay(segments[i].id),
-                onReport: () => _reportSegment(segments[i].id),
+                onToggleReport: () => _togglePicker(segments[i].id),
+                onCancelPicker: () => _togglePicker(segments[i].id),
+                onSelectLabel: (label) => _submitReport(segments[i], label),
                 onOverride: () => _showOverrideSheet(segments[i].id),
               ),
             ),
@@ -184,8 +211,12 @@ class _PoolCard extends StatelessWidget {
   final bool isActioning;
   final bool alreadyReported;
   final bool isResearcher;
+  final bool showPicker;
+  final AsyncValue<List<AppLabel>> labelsAsync;
   final VoidCallback onPlay;
-  final VoidCallback onReport;
+  final VoidCallback onToggleReport;
+  final VoidCallback onCancelPicker;
+  final void Function(String label) onSelectLabel;
   final VoidCallback onOverride;
 
   const _PoolCard({
@@ -194,8 +225,12 @@ class _PoolCard extends StatelessWidget {
     required this.isActioning,
     required this.alreadyReported,
     required this.isResearcher,
+    required this.showPicker,
+    required this.labelsAsync,
     required this.onPlay,
-    required this.onReport,
+    required this.onToggleReport,
+    required this.onCancelPicker,
+    required this.onSelectLabel,
     required this.onOverride,
   });
 
@@ -223,12 +258,16 @@ class _PoolCard extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${segment.startSec.toStringAsFixed(1)}s – ${segment.endSec.toStringAsFixed(1)}s',
-                  style: theme.textTheme.bodyMedium,
+                Expanded(
+                  child: Text(
+                    segment.displayLabel,
+                    style: theme.textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
-                const Spacer(),
-                if (segment.consensusOpen)
+                if (segment.consensusOpen) ...[
+                  const SizedBox(width: 8),
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -242,6 +281,7 @@ class _PoolCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: AppColors.bark)),
                   ),
+                ],
               ],
             ),
             const SizedBox(height: 8),
@@ -322,6 +362,13 @@ class _PoolCard extends StatelessWidget {
                   label: const Text('Override Label'),
                 ),
               )
+            else if (showPicker)
+              _LabelPicker(
+                segment: segment,
+                labelsAsync: labelsAsync,
+                onSelect: onSelectLabel,
+                onCancel: onCancelPicker,
+              )
             else
               SizedBox(
                 width: double.infinity,
@@ -332,7 +379,7 @@ class _PoolCard extends StatelessWidget {
                   ),
                   onPressed: alreadyReported || segment.consensusOpen
                       ? null
-                      : onReport,
+                      : onToggleReport,
                   icon: const Icon(Icons.flag_outlined, size: 18),
                   label: Text(segment.consensusOpen
                       ? 'Already Disputed'
@@ -354,6 +401,89 @@ class _PoolCard extends StatelessWidget {
       'auto_7day' => 'auto-accepted',
       _ => reason,
     };
+  }
+}
+
+/// Inline chip picker shown in place of the "Report Wrong Label" button.
+/// Tapping a chip submits the report immediately (no separate confirm step);
+/// tapping Cancel collapses back to the button. Deliberately not a
+/// dialog/bottom sheet — keeps everything on the same route so there's no
+/// second Navigator involved.
+class _LabelPicker extends StatelessWidget {
+  final Segment segment;
+  final AsyncValue<List<AppLabel>> labelsAsync;
+  final void Function(String label) onSelect;
+  final VoidCallback onCancel;
+
+  const _LabelPicker({
+    required this.segment,
+    required this.labelsAsync,
+    required this.onSelect,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'What should this be?',
+          style: theme.textTheme.labelSmall
+              ?.copyWith(color: theme.colorScheme.outline),
+        ),
+        const SizedBox(height: 8),
+        labelsAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+          error: (e, _) => Text(
+            'Failed to load labels',
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
+          data: (labels) {
+            final choices =
+                labels.where((l) => l.name != segment.effectiveLabel).toList();
+            if (choices.isEmpty) {
+              return Text(
+                'No other active labels available.',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.outline),
+              );
+            }
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ...choices.map(
+                  (l) => ActionChip(
+                    avatar: Icon(
+                      l.name == 'chainsaw'
+                          ? Icons.warning_amber_outlined
+                          : Icons.forest_outlined,
+                      size: 16,
+                    ),
+                    label: Text(l.displayName),
+                    onPressed: () => onSelect(l.name),
+                  ),
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.close, size: 16),
+                  label: const Text('Cancel'),
+                  onPressed: onCancel,
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 

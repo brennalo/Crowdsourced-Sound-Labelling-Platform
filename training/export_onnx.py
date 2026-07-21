@@ -105,8 +105,8 @@ async def register_model_in_db(
     import sys
     import os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
-    from app.models.model_version import ModelVersion
-    from app.models.retraining_job import RetrainingJob
+    from db_scheme_model_part import ModelVersion
+    from db_scheme_model_part import RetrainingJob
 
     engine = create_async_engine(settings.database_url)
     Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

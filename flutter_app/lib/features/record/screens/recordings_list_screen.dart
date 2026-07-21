@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '/core/api/providers.dart';
 import '/core/models/models.dart';
+import '/core/widgets/account_menu_button.dart';
 import '/app/theme.dart';
 
 class RecordingsListScreen extends ConsumerWidget {
@@ -22,6 +23,9 @@ class RecordingsListScreen extends ConsumerWidget {
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(myRecordingsProvider),
           ),
+          const SizedBox(width: 4),
+          const AccountMenuButton(),
+          const SizedBox(width: 8),
         ],
       ),
       body: recordingsAsync.when(

@@ -189,8 +189,10 @@ class ConsensusService {
     return (res.data as List).map((j) => Segment.fromJson(j)).toList();
   }
 
-  Future<void> reportSegment(String segmentId) async {
-    await _dio.post('/consensus/report/$segmentId');
+  Future<void> reportSegment(String segmentId, String proposedLabel) async {
+    await _dio.post('/consensus/report/$segmentId', data: {
+      'proposed_label': proposedLabel,
+    });
   }
 
   Future<Map<String, dynamic>> castVote(
@@ -273,5 +275,83 @@ class ExportService {
   Future<String> getDownloadUrl(String jobId) async {
     final res = await _dio.get('/exports/$jobId/download');
     return res.data['download_url'] as String;
+  }
+}
+
+class ConfigService {
+  final Dio _dio;
+  ConfigService(this._dio);
+
+  Future<SystemConfig> getConfig() async {
+    final res = await _dio.get('/config/');
+    return SystemConfig.fromJson(res.data);
+  }
+
+  Future<SystemConfig> updateConfig({
+    double? silenceThresholdDbfs,
+    double? confidenceThreshold,
+    int? rejectionThreshold,
+  }) async {
+    final res = await _dio.patch('/config/', data: {
+      if (silenceThresholdDbfs != null)
+        'silence_threshold_dbfs': silenceThresholdDbfs,
+      if (confidenceThreshold != null)
+        'confidence_threshold': confidenceThreshold,
+      if (rejectionThreshold != null) 'rejection_threshold': rejectionThreshold,
+    });
+    return SystemConfig.fromJson(res.data);
+  }
+}
+
+class AdminService {
+  final Dio _dio;
+  AdminService(this._dio);
+
+  Future<List<AdminUser>> listUsers({String? role}) async {
+    final res = await _dio.get('/admin/users', queryParameters: {
+      if (role != null) 'role': role,
+    });
+    return (res.data as List).map((j) => AdminUser.fromJson(j)).toList();
+  }
+
+  Future<void> deactivateUser(String userId) async {
+    await _dio.delete('/admin/users/$userId');
+  }
+
+  Future<void> reactivateUser(String userId) async {
+    await _dio.post('/admin/users/$userId/reactivate');
+  }
+
+  Future<List<AdminSegment>> listSegments({
+    int limit = 50,
+    int offset = 0,
+    String? reviewStatus,
+  }) async {
+    final res = await _dio.get('/admin/segments', queryParameters: {
+      'limit': limit,
+      'offset': offset,
+      if (reviewStatus != null) 'review_status': reviewStatus,
+    });
+    return (res.data as List).map((j) => AdminSegment.fromJson(j)).toList();
+  }
+
+  Future<void> deleteSegment(String segmentId) async {
+    await _dio.delete('/admin/segments/$segmentId');
+  }
+}
+
+class DeviceTokenService {
+  final Dio _dio;
+  DeviceTokenService(this._dio);
+
+  Future<void> register(String token, {String? platform}) async {
+    await _dio.post('/device-tokens/', data: {
+      'token': token,
+      if (platform != null) 'platform': platform,
+    });
+  }
+
+  Future<void> unregister(String token) async {
+    await _dio.delete('/device-tokens/', data: {'token': token});
   }
 }

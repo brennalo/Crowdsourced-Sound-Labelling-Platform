@@ -6,6 +6,7 @@ import google.auth
 import google.auth.transport.requests
 
 settings = get_settings()
+RETRAIN_WATCHDOG_TIMEOUT_SECONDS=4000
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=30)
@@ -113,3 +114,53 @@ async def _get_gcp_access_token() -> str:
     # google-auth's refresh() is synchronous/blocking — run in a thread
     # so it doesn't block the event loop other tasks are running on.
     return await asyncio.to_thread(_get_token_sync)
+
+
+@celery_app.task
+def reap_stale_retraining_jobs():
+    """
+    Periodic sweep (Celery Beat). Finds retraining_jobs stuck in 'running'
+    past the expected Cloud Run Job runtime and marks them failed.
+    Covers cases where the container was SIGKILL'd (OOM, infra failure)
+    before it ever reached its own try/except self-reporting logic.
+    """
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(_reap_stale_retraining_jobs())
+    finally:
+        loop.close()
+
+
+async def _reap_stale_retraining_jobs():
+    from datetime import datetime, timezone, timedelta
+    from sqlalchemy import select
+    from app.database import AsyncSessionLocal
+    from app.models.retraining_job import RetrainingJob
+
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=RETRAIN_WATCHDOG_TIMEOUT_SECONDS)
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(RetrainingJob)
+            .where(
+                RetrainingJob.status == "running",
+                RetrainingJob.triggered_at < cutoff,
+            )
+            .with_for_update(skip_locked=True)
+        )
+        stale_jobs = result.scalars().all()
+
+        for job in stale_jobs:
+            print(f"[watchdog] Reaping stale retraining_job {job.id} "
+                  f"(triggered_at={job.triggered_at})")
+            job.status = "failed"
+            job.error_log = "watchdog: job exceeded expected runtime, container likely crashed before self-reporting"
+            job.completed_at = datetime.now(timezone.utc)
+
+        if stale_jobs:
+            await db.commit()
+
+    if stale_jobs:
+        print(f"[watchdog] Reaped {len(stale_jobs)} stale retraining job(s)")

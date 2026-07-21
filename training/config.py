@@ -34,6 +34,9 @@ class TrainingSettings(BaseSettings):
     # Retraining job ID (injected by Celery worker via env)
     retraining_job_id: str = ""
 
+    frugalai_cap: int=5000
+    frugalai_seed: int = 42
+
     class Config:
         env_file = ".env"
 

@@ -17,6 +17,9 @@ from app.routers.training_pool import router as training_pool_router
 from app.routers.researcher import router as researcher_router
 from app.routers.export import router as export_router
 from app.routers.model import router as model_router
+from app.routers.config import router as config_router
+from app.routers.admin import router as admin_router
+from app.routers.device_tokens import router as device_tokens_router
 
 settings = get_settings()
 
@@ -65,6 +68,9 @@ app.include_router(training_pool_router)
 app.include_router(researcher_router)
 app.include_router(export_router)
 app.include_router(model_router)
+app.include_router(config_router)
+app.include_router(admin_router)
+app.include_router(device_tokens_router)
 
 
 @app.get("/health")

@@ -10,6 +10,7 @@ from sqlalchemy import select, func
 from app.database import get_db
 from app.models.user import User
 from app.models.segment import Segment
+from app.models.recording import Recording
 from app.models.consensus_vote import ConsensusVote
 from app.schemas.segment import TrainingPoolSegmentOut, SegmentOut
 from app.auth import get_current_user
@@ -30,8 +31,14 @@ async def list_training_pool(
     _: User = Depends(get_current_user),
 ):
     query = (
-        select(Segment, User.display_name.label("uploader_name"))
+        select(
+            Segment,
+            User.display_name.label("uploader_name"),
+            Recording.recorded_at.label("recording_recorded_at"),
+            Recording.total_segments.label("recording_total_segments"),
+        )
         .join(User, User.id == Segment.user_id)
+        .outerjoin(Recording, Recording.id == Segment.recording_id)
         .where(Segment.review_status.in_(_POOL_STATUSES), Segment.is_silent == False)
     )
 
@@ -52,7 +59,7 @@ async def list_training_pool(
     result = await db.execute(query)
     rows = result.all()
 
-    seg_ids = [seg.id for seg, _ in rows]
+    seg_ids = [seg.id for seg, *_ in rows]
     vote_counts_result = await db.execute(
         select(ConsensusVote.segment_id, ConsensusVote.verdict, func.count().label("n"))
         .where(ConsensusVote.segment_id.in_(seg_ids))
@@ -63,7 +70,7 @@ async def list_training_pool(
         vote_counts.setdefault(seg_id, {})[verdict] = n
 
     output = []
-    for segment, uploader_name in rows:
+    for segment, uploader_name, rec_recorded_at, rec_total_segments in rows:
         base = SegmentOut.model_validate(segment).model_dump()
         c = vote_counts.get(segment.id, {})
         output.append(TrainingPoolSegmentOut(
@@ -72,5 +79,7 @@ async def list_training_pool(
             agree_count=c.get("agree", 0),
             disagree_count=c.get("disagree", 0),
             consensus_open=segment.review_status == "consensus_open",
+            recording_recorded_at=rec_recorded_at,
+            recording_total_segments=rec_total_segments,
         ))
     return output

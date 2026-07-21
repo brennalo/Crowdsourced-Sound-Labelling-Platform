@@ -21,11 +21,7 @@ class Settings(BaseSettings):
 
     # Audio processing
     segment_length_sec: float = 3.0
-    silence_threshold_dbfs: float = -60.0
     sample_rate: int = 22050
-
-    # Active learning
-    rejection_threshold: int = 150
 
     # Cloud Run Job (retraining)
     gcp_project_id: str

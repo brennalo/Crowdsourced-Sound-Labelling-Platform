@@ -25,6 +25,12 @@ final researcherServiceProvider =
     Provider((ref) => ResearcherService(ref.watch(dioProvider)));
 final exportServiceProvider =
     Provider((ref) => ExportService(ref.watch(dioProvider)));
+final configServiceProvider =
+    Provider((ref) => ConfigService(ref.watch(dioProvider)));
+final adminServiceProvider =
+    Provider((ref) => AdminService(ref.watch(dioProvider)));
+final deviceTokenServiceProvider =
+    Provider((ref) => DeviceTokenService(ref.watch(dioProvider)));
 
 // ── Auth ──────────────────────────────────────────────────────
 
@@ -171,4 +177,22 @@ final retrainingJobsProvider = FutureProvider<List<RetrainingJob>>((ref) {
 
 final myRecordingsProvider = FutureProvider<List<Recording>>((ref) {
   return ref.watch(recordingServiceProvider).listMyRecordings();
+});
+
+// ── System config (researcher-adjustable thresholds) ────────────
+
+final systemConfigProvider = FutureProvider.autoDispose<SystemConfig>((ref) {
+  return ref.watch(configServiceProvider).getConfig();
+});
+
+// ── Admin: user management ───────────────────────────────────────
+
+final adminUsersProvider =
+    FutureProvider.autoDispose.family<List<AdminUser>, String>((ref, role) {
+  return ref.watch(adminServiceProvider).listUsers(role: role);
+});
+
+final adminSegmentsProvider =
+    FutureProvider.autoDispose<List<AdminSegment>>((ref) {
+  return ref.watch(adminServiceProvider).listSegments();
 });

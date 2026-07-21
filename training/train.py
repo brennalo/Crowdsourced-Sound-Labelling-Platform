@@ -24,6 +24,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
 from sklearn.metrics import classification_report
 import numpy as np
+from dataset import FrugalAIDataset, GCSSegmentDataset, CombinedDataset, PrecomputedDataset
 
 from config import get_training_settings
 from model import build_model, count_parameters
@@ -43,18 +44,21 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def load_frugalai_dataset():
     from datasets import load_dataset, Audio
     print("[data] Loading rfcx/frugalai from HuggingFace...")
-    hf = load_dataset("rfcx/frugalai", trust_remote_code=True,token=os.environ.get("HF_TOKEN"))
+    hf = load_dataset("rfcx/frugalai", token=os.environ.get("HF_TOKEN"))
     train_split = hf["train"] if "train" in hf else hf[list(hf.keys())[0]]
 
     train_split = train_split.cast_column('audio', Audio(decode=False))
 
-    # Map frugalai label names → our label names
-    # Adjust this mapping based on actual dataset column values
     label_map = {
         "0": "chainsaw",
         "1": "environment",
     }
-    return FrugalAIDataset(train_split, label_map=label_map)
+    return FrugalAIDataset(
+        train_split,
+        label_map=label_map,
+        max_per_class=settings.frugalai_cap,
+        seed=settings.frugalai_seed,
+    )
 
 
 async def load_gcs_records() -> list[dict]:
@@ -226,6 +230,7 @@ def main():
             gcs_ds = GCSSegmentDataset(records) if records else None
             dataset = CombinedDataset([frugalai_ds, gcs_ds]) if gcs_ds else frugalai_ds
 
+        dataset = PrecomputedDataset(dataset, desc=args.mode)
         result = train(dataset, output_dir)
 
         # Export to ONNX and push to GCS

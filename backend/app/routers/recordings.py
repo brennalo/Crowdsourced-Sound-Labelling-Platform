@@ -15,7 +15,6 @@ router = APIRouter(prefix="/recordings", tags=["recordings"])
 
 ALLOWED_MIME_TYPES = {"audio/wav", "audio/x-wav", "audio/mpeg", "audio/mp4", "audio/ogg", "audio/flac"}
 
-
 @router.post("/", response_model=RecordingOut, status_code=status.HTTP_201_CREATED)
 async def upload_recording(
     file: UploadFile = File(...),

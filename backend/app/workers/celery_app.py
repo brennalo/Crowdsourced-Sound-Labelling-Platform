@@ -16,27 +16,41 @@ celery_app = Celery(
         "app.workers.auto_accept",
     ],
 )
-
-celery_app.conf.update(
+conf_updates = dict(
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
     timezone="UTC",
     enable_utc=True,
-    # Beat schedule: run auto-accept once per day at 02:00 UTC
     beat_schedule={
         "auto-accept-old-suggestions": {
             "task": "app.workers.auto_accept.auto_accept_old_suggestions",
             "schedule": crontab(hour=2, minute=0),
         },
+        "reap-stale-retraining-jobs": {
+        "task": "app.workers.retraining.reap_stale_retraining_jobs",
+        "schedule": crontab(minute="*/15"),  # every 15 min, not once-daily like the nightly sweep
+        },
     },
-    broker_use_ssl={
-        'ssl_cert_reqs': 'CERT_NONE'  # Upstash-managed cert, not verifying against a local CA bundle
+    broker_connection_retry_on_startup=True,
+    broker_connection_retry=True,
+    broker_connection_max_retries=None,
+    broker_transport_options={
+        'socket_keepalive': True,
+        'socket_connect_timeout': 30,
+        'retry_on_timeout': True,
+        'health_check_interval': 120,
     },
-    redis_backend_use_ssl={
-        'ssl_cert_reqs': 'CERT_NONE'
-    },
+    broker_pool_limit=1,
 )
+
+# Only add SSL params if actually connecting over rediss://
+if settings.redis_url.startswith("rediss://"):
+    conf_updates["broker_use_ssl"] = {'ssl_cert_reqs': 'CERT_NONE'}
+    conf_updates["redis_backend_use_ssl"] = {'ssl_cert_reqs': 'CERT_NONE'}
+
+celery_app.conf.update(**conf_updates)
+
 @worker_process_init.connect
 def load_model_on_worker_start(**kwargs):
     import asyncio

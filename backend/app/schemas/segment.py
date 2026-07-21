@@ -16,6 +16,7 @@ class SegmentOut(BaseModel):
     model_label: str | None
     model_confidence: float | None
     pool_entry_reason: str | None
+    sequence_num: int | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -26,6 +27,7 @@ class SegmentOut(BaseModel):
 class MySegmentOut(SegmentOut):
     """SegmentOut with recording metadata for flat-list view."""
     recording_recorded_at: datetime | None = None
+    recording_total_segments: int | None = None
 
 
 # ── Suggestion review (high-confidence, contributor own segment) ──
@@ -50,6 +52,17 @@ class ConsensusSegmentOut(SegmentOut):
     disagree_count: int
     consensus_required: int
     user_voted: bool  # has the calling user already voted
+    proposed_label: str | None = None  # what agree/disagree is being voted on
+    recording_recorded_at: datetime | None = None
+    recording_total_segments: int | None = None
+    uploader_display_name: str | None = None
+
+
+class ConsensusReportCreate(BaseModel):
+    """Reporting a segment as wrong now requires saying what it should be —
+    replaces the old implicit binary opposite, which only worked with
+    exactly two labels."""
+    proposed_label: str
 
 
 class ConsensusVoteCreate(BaseModel):
@@ -76,6 +89,8 @@ class TrainingPoolSegmentOut(SegmentOut):
     agree_count: int = 0
     disagree_count: int = 0
     consensus_open: bool = False
+    recording_recorded_at: datetime | None = None
+    recording_total_segments: int | None = None
 
 
 # ── Researcher review ─────────────────────────────────────────

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Float, Boolean, DateTime, ForeignKey, func
+from sqlalchemy import String, Float, Boolean, Integer, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
@@ -28,12 +28,22 @@ class Segment(Base):
     # Authoritative label used by training export. Set when entering training_pool.
     effective_label: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    # Label proposed by whoever most recently reported this segment wrong.
+    # Set when a report opens consensus_open, cleared when the round resolves
+    # (either outcome). Voting agree/disagree is relative to THIS value, not
+    # an implicit "opposite class" — works for any number of active labels.
+    proposed_label: Mapped[str | None] = mapped_column(String, nullable=True)
+
     # Original model prediction — never changes after inference
     model_label: Mapped[str | None] = mapped_column(String, nullable=True)
     model_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # How segment entered training_pool: manual | accepted | auto_7day
     pool_entry_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # 1-based position among this recording's non-silent segments (e.g. 3 of 40).
+    # Assigned at segmentation time — display identifier, not used for sorting logic.
+    sequence_num: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

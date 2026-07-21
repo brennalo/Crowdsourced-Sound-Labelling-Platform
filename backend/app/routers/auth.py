@@ -37,6 +37,8 @@ async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
     user = result.scalar_one_or_none()
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="This account has been deactivated")
 
     token = create_access_token(str(user.id))
     return TokenOut(access_token=token, user=UserOut.model_validate(user))

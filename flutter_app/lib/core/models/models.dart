@@ -5,6 +5,7 @@ class User {
   final String email;
   final String? displayName;
   final String role;
+  final bool isActive;
   final DateTime createdAt;
 
   const User({
@@ -12,6 +13,7 @@ class User {
     required this.email,
     this.displayName,
     required this.role,
+    this.isActive = true,
     required this.createdAt,
   });
 
@@ -20,12 +22,14 @@ class User {
         email: j['email'],
         displayName: j['display_name'],
         role: j['role'],
+        isActive: j['is_active'] ?? true,
         createdAt: DateTime.parse(j['created_at']),
       );
 
   String get name => displayName ?? email.split('@').first;
   bool get isResearcher => role == 'researcher' || role == 'admin';
   bool get isContributor => role == 'contributor' || role == 'admin';
+  bool get isAdmin => role == 'admin';
 }
 
 class AuthToken {
@@ -71,6 +75,7 @@ class Recording {
   final double? durationSec;
   final DateTime? recordedAt;
   final String status;
+  final int? totalSegments;
   final DateTime createdAt;
 
   const Recording({
@@ -79,6 +84,7 @@ class Recording {
     this.durationSec,
     this.recordedAt,
     required this.status,
+    this.totalSegments,
     required this.createdAt,
   });
 
@@ -89,6 +95,7 @@ class Recording {
         recordedAt:
             j['recorded_at'] != null ? DateTime.parse(j['recorded_at']) : null,
         status: j['status'],
+        totalSegments: j['total_segments'] as int?,
         createdAt: DateTime.parse(j['created_at']),
       );
 
@@ -117,6 +124,17 @@ class Segment {
   final int disagreeCount;
   final bool consensusOpen;
 
+  // Consensus extras
+  final bool userVoted;
+
+  // Identifier / display context
+  final int? sequenceNum;
+  final DateTime? recordingRecordedAt;
+  final int? recordingTotalSegments;
+
+  // Consensus: label proposed by whoever reported this segment wrong
+  final String? proposedLabel;
+
   const Segment({
     required this.id,
     required this.recordingId,
@@ -134,6 +152,11 @@ class Segment {
     this.agreeCount = 0,
     this.disagreeCount = 0,
     this.consensusOpen = false,
+    this.userVoted = false,
+    this.sequenceNum,
+    this.recordingRecordedAt,
+    this.recordingTotalSegments,
+    this.proposedLabel,
   });
 
   factory Segment.fromJson(Map<String, dynamic> j) => Segment(
@@ -153,6 +176,13 @@ class Segment {
         agreeCount: j['agree_count'] ?? 0,
         disagreeCount: j['disagree_count'] ?? 0,
         consensusOpen: j['consensus_open'] ?? false,
+        userVoted: j['user_voted'] ?? false,
+        sequenceNum: j['sequence_num'] as int?,
+        recordingRecordedAt: j['recording_recorded_at'] != null
+            ? DateTime.parse(j['recording_recorded_at'])
+            : null,
+        recordingTotalSegments: j['recording_total_segments'] as int?,
+        proposedLabel: j['proposed_label'] as String?,
       );
 
   double get durationSec => endSec - startSec;
@@ -163,6 +193,57 @@ class Segment {
       reviewStatus == 'training_pool' || reviewStatus == 'consensus_open';
   bool get isExcludedOther => reviewStatus == 'excluded_other';
   bool get needsAction => isAnnotationPending || isSuggestionPending;
+
+  /// Human-friendly identifier for flat-list views, e.g.
+  /// "Jul 15, 9:42 AM · Segment 3/40" or, once a contributor is mixed in
+  /// (consensus / training pool / researcher review), "... · by Maria".
+  /// Falls back to the raw start–end seconds if recording context wasn't
+  /// included in this particular API response.
+  String get displayLabel {
+    final parts = <String>[];
+    if (recordingRecordedAt != null) {
+      parts.add(_formatShortDateTime(recordingRecordedAt!));
+    }
+    if (sequenceNum != null) {
+      parts.add(recordingTotalSegments != null
+          ? 'Segment $sequenceNum/$recordingTotalSegments'
+          : 'Segment $sequenceNum');
+    }
+    if (uploaderDisplayName != null && uploaderDisplayName!.isNotEmpty) {
+      parts.add('by $uploaderDisplayName');
+    }
+    if (parts.isEmpty) {
+      return '${startSec.toStringAsFixed(1)}s – ${endSec.toStringAsFixed(1)}s';
+    }
+    return parts.join(' · ');
+  }
+}
+
+const _shortMonths = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/// Small local formatter so we don't need to pull in `intl` just for this —
+/// e.g. "Jul 15, 9:42 AM". Uses the device's local time zone.
+String _formatShortDateTime(DateTime dt) {
+  final local = dt.toLocal();
+  final month = _shortMonths[local.month - 1];
+  final hour24 = local.hour;
+  final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = hour24 < 12 ? 'AM' : 'PM';
+  return '$month ${local.day}, $hour12:$minute $period';
 }
 
 class ExportJob {
@@ -250,4 +331,108 @@ class RetrainingJob {
       );
 
   bool get isDone => status == 'done';
+}
+
+// ── System config (researcher-adjustable thresholds) ────────────
+
+class SystemConfig {
+  final double silenceThresholdDbfs;
+  final double confidenceThreshold;
+  final int rejectionThreshold;
+  final String? updatedBy;
+  final DateTime updatedAt;
+
+  const SystemConfig({
+    required this.silenceThresholdDbfs,
+    required this.confidenceThreshold,
+    required this.rejectionThreshold,
+    this.updatedBy,
+    required this.updatedAt,
+  });
+
+  factory SystemConfig.fromJson(Map<String, dynamic> j) => SystemConfig(
+        silenceThresholdDbfs: (j['silence_threshold_dbfs'] as num).toDouble(),
+        confidenceThreshold: (j['confidence_threshold'] as num).toDouble(),
+        rejectionThreshold: j['rejection_threshold'] as int,
+        updatedBy: j['updated_by'] as String?,
+        updatedAt: DateTime.parse(j['updated_at']),
+      );
+}
+
+// ── Admin: user management ───────────────────────────────────────
+
+class AdminUser {
+  final String id;
+  final String email;
+  final String? displayName;
+  final String role;
+  final bool isActive;
+  final DateTime? deactivatedAt;
+  final DateTime createdAt;
+  final int recordingsCount;
+  final int segmentsCount;
+
+  const AdminUser({
+    required this.id,
+    required this.email,
+    this.displayName,
+    required this.role,
+    required this.isActive,
+    this.deactivatedAt,
+    required this.createdAt,
+    required this.recordingsCount,
+    required this.segmentsCount,
+  });
+
+  factory AdminUser.fromJson(Map<String, dynamic> j) => AdminUser(
+        id: j['id'],
+        email: j['email'],
+        displayName: j['display_name'],
+        role: j['role'],
+        isActive: j['is_active'] ?? true,
+        deactivatedAt: j['deactivated_at'] != null
+            ? DateTime.parse(j['deactivated_at'])
+            : null,
+        createdAt: DateTime.parse(j['created_at']),
+        recordingsCount: j['recordings_count'] ?? 0,
+        segmentsCount: j['segments_count'] ?? 0,
+      );
+
+  String get name => displayName ?? email.split('@').first;
+}
+
+class AdminSegment {
+  final String id;
+  final String recordingId;
+  final String? uploaderDisplayName;
+  final String uploaderEmail;
+  final String reviewStatus;
+  final String? effectiveLabel;
+  final int? sequenceNum;
+  final DateTime createdAt;
+
+  const AdminSegment({
+    required this.id,
+    required this.recordingId,
+    this.uploaderDisplayName,
+    required this.uploaderEmail,
+    required this.reviewStatus,
+    this.effectiveLabel,
+    this.sequenceNum,
+    required this.createdAt,
+  });
+
+  factory AdminSegment.fromJson(Map<String, dynamic> j) => AdminSegment(
+        id: j['id'],
+        recordingId: j['recording_id'],
+        uploaderDisplayName: j['uploader_display_name'],
+        uploaderEmail: j['uploader_email'],
+        reviewStatus: j['review_status'],
+        effectiveLabel: j['effective_label'],
+        sequenceNum: j['sequence_num'] as int?,
+        createdAt: DateTime.parse(j['created_at']),
+      );
+
+  String get uploaderName =>
+      uploaderDisplayName ?? uploaderEmail.split('@').first;
 }
