@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : account_menu_button.dart
+// Description : Account menu button widget for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/providers.dart';

@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : system_config_screen.dart
+// Description : Central "Configuration" screen for researchers/admins — everything a researcher tunes about how the pipeline behaves lives here
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
@@ -5,9 +11,6 @@ import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
 import '../../../core/widgets/account_menu_button.dart';
 
-/// Central "Configuration" screen for researchers/admins — everything a
-/// researcher tunes about how the pipeline behaves lives here, in tabs,
-/// rather than scattered across separate menu entries.
 class ConfigurationScreen extends StatelessWidget {
   const ConfigurationScreen({super.key});
 

@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : login_screen.dart
+// Description : Login screen for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : train.py
+# Description : Full retraining script for the Forest Sound CNN
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 train.py — full retraining script.
 

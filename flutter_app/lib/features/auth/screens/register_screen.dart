@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : register_screen.dart
+// Description : Register screen for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -69,7 +75,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   labelText: 'Password',
                   prefixIcon: const Icon(Icons.lock_outlined),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    icon: Icon(_obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
                     onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
@@ -82,7 +90,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 selected: _role == 'contributor',
                 icon: Icons.mic_outlined,
                 title: 'Contributor',
-                description: 'Record forest sounds and help verify AI predictions.',
+                description:
+                    'Record forest sounds and help verify AI predictions.',
                 onTap: () => setState(() => _role = 'contributor'),
               ),
               const SizedBox(height: 8),
@@ -91,19 +100,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 selected: _role == 'researcher',
                 icon: Icons.science_outlined,
                 title: 'Researcher',
-                description: 'Review labelled data quality and export datasets for training.',
+                description:
+                    'Review labelled data quality and export datasets for training.',
                 onTap: () => setState(() => _role = 'researcher'),
               ),
               if (auth.error != null) ...[
                 const SizedBox(height: 12),
-                Text(auth.error!, style: TextStyle(color: theme.colorScheme.error)),
+                Text(auth.error!,
+                    style: TextStyle(color: theme.colorScheme.error)),
               ],
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: auth.isLoading ? null : _register,
                 child: auth.isLoading
                     ? const SizedBox(
-                        width: 20, height: 20,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Text('Create Account'),
               ),
@@ -130,14 +142,19 @@ class _RoleCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _RoleCard({
-    required this.role, required this.selected, required this.icon,
-    required this.title, required this.description, required this.onTap,
+    required this.role,
+    required this.selected,
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = selected ? theme.colorScheme.primary : theme.colorScheme.outline;
+    final color =
+        selected ? theme.colorScheme.primary : theme.colorScheme.outline;
 
     return InkWell(
       onTap: onTap,
@@ -148,7 +165,9 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color, width: selected ? 2 : 1),
-          color: selected ? theme.colorScheme.primary.withOpacity(0.07) : Colors.transparent,
+          color: selected
+              ? theme.colorScheme.primary.withOpacity(0.07)
+              : Colors.transparent,
         ),
         child: Row(
           children: [
@@ -159,12 +178,12 @@ class _RoleCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                          color: color, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
                   Text(description,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),

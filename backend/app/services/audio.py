@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : audio.py
+# Description : Audio processing helper functions for handling audio files
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import io
 import uuid
 import numpy as np

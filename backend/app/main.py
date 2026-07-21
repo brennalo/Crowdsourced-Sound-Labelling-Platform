@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : main.py
+# Description : Main application entry point
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

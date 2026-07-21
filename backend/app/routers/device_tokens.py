@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : device_tokens.py
+# Description : Device token API endpoints for managing FCM tokens
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Registers a Flutter client's FCM token against the current user, so background
 workers can push to them when a task finishes (segmentation, export, retrain,

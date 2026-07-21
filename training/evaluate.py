@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : evaluate.py
+# Description : Evaluate a trained model on a labelled dataset
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 evaluate.py — run evaluation on a saved ONNX model against a labelled dataset.
 

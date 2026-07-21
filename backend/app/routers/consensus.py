@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : consensus.py
+# Description : Consensus API endpoints for managing label disputes
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Consensus — any authenticated user can report a training_pool segment as
 wrong, proposing what they think the correct label should be. A report opens
@@ -5,11 +11,6 @@ a consensus_open vote on that specific proposal. First side to 3 votes wins.
 agree = accept the proposed_label → effective_label becomes proposed_label
 disagree = reject the proposal → effective_label stays as it was
 Odd quorum (3) means ties are structurally impossible.
-
-Note: this replaced an earlier binary "OPPOSITE class" flip mechanism that
-only worked because there were exactly two labels (chainsaw/environment).
-Now that labels are managed dynamically and can number more than two, the
-proposed label must be explicit rather than inferred.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession

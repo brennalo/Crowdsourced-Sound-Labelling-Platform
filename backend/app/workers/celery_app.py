@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : celery_app.py
+# Description : Celery app configuration for periodic tasks and worker startup hooks
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from celery import Celery
 from celery.schedules import crontab
 from celery.signals import worker_process_init

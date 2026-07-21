@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : auth.py
+# Description : Authentication and authorization logic for the API
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from passlib.context import CryptContext

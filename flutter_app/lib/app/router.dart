@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : router.dart
+// Description : GoRouter configuration for the Flutter app, including route definitions and authentication-based redirection
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : segment.py
+# Description : Model class for segments in the database
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import uuid
 from datetime import datetime
 from sqlalchemy import String, Float, Boolean, Integer, DateTime, ForeignKey, func

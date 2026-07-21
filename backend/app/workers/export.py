@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : export.py
+# Description : Export job management for dataset exports
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import uuid
 from app.workers.celery_app import celery_app
 

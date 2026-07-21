@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : system_config.py
+# Description : System configuration management service for fetching the singleton system_config row
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Reads the singleton system_config row at call time — deliberately NOT cached
 at process/module level, so a researcher's change is picked up by the very

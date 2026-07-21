@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : model.py
+# Description : Definition of the lightweight CNN model for audio classification
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Lightweight CNN for binary audio classification on mel spectrograms.
 

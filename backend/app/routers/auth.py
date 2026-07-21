@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : auth.py
+# Description : Authentication API endpoints
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select

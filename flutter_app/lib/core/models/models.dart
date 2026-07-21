@@ -1,4 +1,8 @@
-// lib/core/models/models.dart
+//Programmer Name - Brenna Lo
+//Program Name : models.dart
+// Description : Data models for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
 
 class User {
   final String id;

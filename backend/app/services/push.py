@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : push.py
+# Description : Push notification functionality via Firebase Cloud Messaging
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Push notifications via Firebase Cloud Messaging.
 

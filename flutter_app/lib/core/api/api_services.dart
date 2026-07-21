@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : api_services.dart
+// Description : API service implementations for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';

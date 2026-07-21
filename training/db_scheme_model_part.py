@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : db_scheme_model_part.py
+# Description : Minimal standalone models for the training container's own DB reads/writes
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Minimal standalone models for the training container's own DB reads/writes.
 Intentionally NOT importing from backend/ — the training container's Docker

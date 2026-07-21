@@ -1,3 +1,9 @@
+//Programmer Name : Brenna Lo
+//Program Name : shell_screen.dart
+//Description : the shell screen for the Flutter app, which provides a bottom navigation bar and renders the appropriate child screen based on the user's role (contributor or researcher).
+//First Written on : 2024-06-10
+//Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

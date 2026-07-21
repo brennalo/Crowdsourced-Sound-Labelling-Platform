@@ -1,3 +1,9 @@
+//Programmer Name : Brenna Lo
+//Program Name : forest_hero.dart
+//Description : drawing of forest hero for contributor
+//First Written on : 2024-06-10
+//Edited on : 2024-07-18
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../app/theme.dart';

@@ -1,3 +1,9 @@
+//Programmer Name : Brenna Lo
+//Program Name : config.dart
+//Description : Configuration values for the app
+//First Written on : 2024-06-10
+//Edited on : 2024-07-18
+
 class AppConfig {
   // Change to your Cloud Run URL in production
   static const String baseUrl = String.fromEnvironment('API_BASE_URL',
@@ -5,8 +11,6 @@ class AppConfig {
       //defaultValue: 'http://localhost:8080', // web simulator
       defaultValue:
           'https://forest-sound-api-841974142704.us-central1.run.app');
-
-  //static const String baseUrl = 'baseUrl';
 
   static const Duration httpTimeout = Duration(seconds: 30);
   static const Duration uploadTimeout = Duration(minutes: 5);

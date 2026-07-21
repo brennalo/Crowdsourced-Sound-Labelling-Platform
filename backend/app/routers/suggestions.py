@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : suggestions.py
+# Description : Suggestion API endpoints for managing model suggestions
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Suggestion review — high-confidence model predictions on contributor's own segments.
 Contributor can: accept (model label stands) or reject+correct (pick correct label).

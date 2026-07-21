@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : inference.py
+# Description : Inference functionality for running predictions on audio segments as function helper class
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import io
 import os
 import tempfile

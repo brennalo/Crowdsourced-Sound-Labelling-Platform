@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : dio_client.dart
+// Description : Dio client configuration for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -47,6 +53,7 @@ class _AuthInterceptor extends Interceptor {
 }
 
 // Token helpers used by auth provider
-Future<void> saveToken(String token) => _storage.write(key: _tokenKey, value: token);
+Future<void> saveToken(String token) =>
+    _storage.write(key: _tokenKey, value: token);
 Future<void> clearToken() => _storage.delete(key: _tokenKey);
 Future<String?> readToken() => _storage.read(key: _tokenKey);

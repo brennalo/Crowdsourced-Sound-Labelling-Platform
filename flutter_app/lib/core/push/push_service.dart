@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : push_service.dart
+// Description : Push notification service for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,9 +45,8 @@ class PushService {
       if (token == null) return;
       await ref.read(deviceTokenServiceProvider).register(
             token,
-            platform: defaultTargetPlatform == TargetPlatform.iOS
-                ? 'ios'
-                : 'android',
+            platform:
+                defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
           );
     } catch (_) {
       // Best-effort — a missed registration just costs one fewer push,

@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : admin_screen.dart
+// Description : Admin screen for managing users and segments
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';

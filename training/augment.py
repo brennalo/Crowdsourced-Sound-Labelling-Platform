@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : record_screen.dart
+# Description : UI and stateful widget of record screen tab for contributor
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 augment.py — audio augmentation utilities.
 

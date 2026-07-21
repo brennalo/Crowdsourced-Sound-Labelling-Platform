@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : export.py
+# Description : Export functionality for managing and packaging annotated audio segments
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import io
 import csv
 import uuid

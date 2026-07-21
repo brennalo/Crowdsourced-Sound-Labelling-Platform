@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : config.py
+# Description : Configuration API endpoints for managing system-wide settings
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Researcher-adjustable thresholds — silence, suggestion confidence, rejection
 count for retraining. Single-row config table (see app.models.system_config).

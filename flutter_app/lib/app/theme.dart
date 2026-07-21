@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : theme.dart
+// Description : App theme definitions for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 

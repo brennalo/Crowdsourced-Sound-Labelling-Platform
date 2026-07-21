@@ -1,3 +1,9 @@
+//Programmer Name : Brenna Lo
+//Program Name : recordings_list_screen.dart
+//Description : UI and stateful widget of recordings list screen for contributor
+//First Written on : 2024-06-10
+//Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

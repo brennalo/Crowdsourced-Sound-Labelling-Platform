@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : training_pool.py
+# Description : Training pool API endpoints for managing training segments
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Training pool — read-only view of all training_pool + consensus_open segments.
 All authenticated users can browse and listen.

@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : device_token.py
+# Description : Model class for device tokens in the database
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import uuid
 from datetime import datetime
 from sqlalchemy import String, DateTime, ForeignKey, func, UniqueConstraint

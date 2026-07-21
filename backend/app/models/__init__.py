@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : __init__.py
+# Description : init file for models package, imports all model classes for easy access
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from app.models.user import User
 from app.models.recording import Recording
 from app.models.segment import Segment

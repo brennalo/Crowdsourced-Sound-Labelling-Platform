@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : retraining.py
+# Description : Retraining job management for periodic model retraining
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import uuid
 from app.workers.celery_app import celery_app
 from app.config import get_settings

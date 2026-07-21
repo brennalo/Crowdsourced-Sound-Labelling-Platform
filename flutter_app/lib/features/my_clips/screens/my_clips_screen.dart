@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : my_clips_screen.dart
+// Description : My Clips screen for the Flutter app
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';

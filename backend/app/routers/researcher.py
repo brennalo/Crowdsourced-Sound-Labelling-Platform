@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : researcher.py
+# Description : Researcher API endpoints for managing research activities
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Researcher-only endpoints:
 - GET  /researcher/queue          random 20 from training pool not yet reviewed by this researcher

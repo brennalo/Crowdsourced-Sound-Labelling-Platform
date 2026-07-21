@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : segments.py
+# Description : Segment API endpoints for managing audio segments
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func

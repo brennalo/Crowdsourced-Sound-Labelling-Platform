@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : segmentation.py
+# Description : Segmentation job management for audio processing
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import uuid
 from app.workers.celery_app import celery_app
 from app.config import get_settings

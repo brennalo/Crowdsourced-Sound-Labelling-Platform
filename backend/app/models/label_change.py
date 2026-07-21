@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : label_change.py
+# Description : Model class for label changes in the database
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import uuid
 from datetime import datetime
 from sqlalchemy import String, DateTime, ForeignKey, func

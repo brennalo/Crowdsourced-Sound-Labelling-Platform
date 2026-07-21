@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : auto_accept.py
+# Description : Auto-accept high model confidence suggestion segments after 7 days, as a periodic Celery task
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Periodic task: auto-accept suggestion_pending segments older than 7 days.
 annotation_pending segments are never auto-accepted.

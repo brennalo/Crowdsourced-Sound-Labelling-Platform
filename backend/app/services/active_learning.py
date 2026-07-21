@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : active_learning.py
+# Description : Active learning logic for managing model suggestions and retraining as helper funtions class
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.models.label_change import LabelChange

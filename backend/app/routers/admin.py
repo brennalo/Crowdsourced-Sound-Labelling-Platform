@@ -1,18 +1,14 @@
-"""
-Admin-only user & segment management — backs a single screen with tabs for
-Contributors / Researchers / Segments, each row with a delete button.
+# Programmer Name : Brenna Lo
+# Program Name : admin.py
+# Description : Admin API endpoints for user and segment management
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
 
-User deletion is a SOFT delete (is_active=False): recordings, segments,
-annotations, and audit history stay intact and untouched — the account just
-can't log in anymore. This is deliberate: hard-deleting a contributor would
-cascade into their recordings/segments, which are shared training data other
-people's consensus votes and researcher reviews may depend on.
-
-Segment deletion (from the Segments tab) IS a hard delete — it's meant for
-removing bad/test data from the pool, not for offboarding a person, so there's
-no soft-delete equivalent that makes sense. Related consensus_votes and
-label_changes rows are removed first to satisfy foreign keys.
 """
+User deletion is a SOFT delete (is_active=False)
+Segment deletion (from the Segments tab) IS a hard delete
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func

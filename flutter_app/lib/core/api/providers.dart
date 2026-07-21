@@ -1,3 +1,9 @@
+//Programmer Name - Brenna Lo
+//Program Name : providers.dart
+// Description : Riverpod providers for managing app state and API services
+// First Written on : 2024-06-10
+// Edited on : 2024-07-18
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../models/models.dart';

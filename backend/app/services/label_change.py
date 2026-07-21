@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : label_change.py
+# Description : Label change tracking functionality as helper function
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.label_change import LabelChange

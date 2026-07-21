@@ -1,3 +1,9 @@
+//Programmer Name : Brenna Lo
+//Program Name : record_screen.dart
+//Description : UI and stateful widget of record screen tab for contributor
+//First Written on : 2024-06-10
+//Edited on : 2024-07-18
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -11,12 +17,6 @@ import '../widgets/forest_hero.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import '/core/utils/blob_fetch.dart' as blob_utils;
-
-//Programmer Name : Brenna Lo
-//Program Name : record_screen.dart
-//Description : UI and stateful widget of record screen tab for contributor
-//First Written on : 2024-06-10
-//Edited on : 2024-07-18
 
 class RecordScreen extends ConsumerStatefulWidget {
   const RecordScreen({super.key});

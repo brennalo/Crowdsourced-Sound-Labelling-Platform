@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : dataset.py
+# Description : Dataset classes for handling audio data in the training pipeline
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 Dataset classes for both:
 1. Frugalai HuggingFace dataset (initial training)

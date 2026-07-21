@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : export_onnx.py
+# Description : Export trained PyTorch model to ONNX format and upload to GCS
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 """
 export_onnx.py
 

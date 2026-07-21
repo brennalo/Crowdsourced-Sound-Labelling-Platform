@@ -1,3 +1,9 @@
+# Programmer Name : Brenna Lo
+# Program Name : config.py
+# Description : Configuration settings for the training pipeline
+# First Written on : 2024-06-10
+# Edited on : 2024-07-18
+
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
