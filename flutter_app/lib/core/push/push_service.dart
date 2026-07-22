@@ -14,8 +14,20 @@ import '../api/providers.dart';
 /// app is backgrounded/killed. There's no live UI to refresh in that isolate;
 /// the foreground listener below (and each screen's own on-open refetch)
 /// picks up fresh data the next time the app is actually opened.
+///
+/// Note: this only applies to Android/iOS. On web, background delivery is
+/// handled entirely by web/firebase-messaging-sw.js (a separate JS file
+/// running as an actual browser service worker) — this Dart isolate
+/// mechanism doesn't exist in a browser tab, so this handler is simply never
+/// invoked on web. No web-specific branching needed here as a result.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+
+/// Your web app's VAPID key, from Firebase console → Project settings →
+/// Cloud Messaging tab → Web configuration → Web Push certificates. Only
+/// used on web; getToken() on Android/iOS doesn't take this parameter.
+const String _webPushVapidKey =
+    'BPg5Hhwp98UCOjc7vYq3igJfVmozXwyCpqojXZuk-6T_21oI2PoLZv66sYhqExgIFJtU6_AojJ1rprglfbI8PjU';
 
 /// Handles FCM setup: permission request, token registration/refresh, and
 /// translating an incoming push's `data.type` into a provider invalidation
@@ -38,16 +50,28 @@ class PushService {
     messaging.onTokenRefresh.listen((_) => registerCurrentToken());
   }
 
+  Future<String?> _getToken() {
+    // Web requires the VAPID key to authorize the push subscription;
+    // Android/iOS don't take (or need) this parameter at all.
+    if (kIsWeb) {
+      return FirebaseMessaging.instance.getToken(vapidKey: _webPushVapidKey);
+    }
+    return FirebaseMessaging.instance.getToken();
+  }
+
+  String _currentPlatform() {
+    if (kIsWeb) return 'web';
+    return defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+  }
+
   Future<void> registerCurrentToken() async {
     if (!ref.read(authProvider).isAuthenticated) return;
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await _getToken();
       if (token == null) return;
-      await ref.read(deviceTokenServiceProvider).register(
-            token,
-            platform:
-                defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
-          );
+      await ref
+          .read(deviceTokenServiceProvider)
+          .register(token, platform: _currentPlatform());
     } catch (_) {
       // Best-effort — a missed registration just costs one fewer push,
       // never worth surfacing as an error to the user.
@@ -56,7 +80,7 @@ class PushService {
 
   Future<void> unregisterCurrentToken() async {
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await _getToken();
       if (token == null) return;
       await ref.read(deviceTokenServiceProvider).unregister(token);
     } catch (_) {
