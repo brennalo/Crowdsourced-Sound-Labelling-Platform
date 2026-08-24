@@ -314,7 +314,7 @@ class _GroupedTabContent extends ConsumerWidget {
         final recLabels = <String, String>{};
         recordingsAsync.whenData((recs) {
           for (final r in recs) {
-            final dt = r.recordedAt ?? r.createdAt;
+            final dt = (r.recordedAt ?? r.createdAt).toLocal();
             recLabels[r.id] =
                 '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
                 '${dt.day.toString().padLeft(2, '0')} '

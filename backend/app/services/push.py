@@ -87,6 +87,13 @@ async def send_push_to_users(
                     headers={"apns-priority": "10"},
                     payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
                 ),
+
+                webpush=messaging.WebpushConfig(
+                headers={"Urgency": "high"},
+                fcm_options=messaging.WebpushFCMOptions(
+                    link="https://crowdsourced-sound-labelling.web.app",  # where a click on the notification should open
+                ),
+                ),
             )
             try:
                 messaging.send(message)

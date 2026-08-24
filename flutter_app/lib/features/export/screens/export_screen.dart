@@ -1,11 +1,6 @@
-//Programmer Name - Brenna Lo
-//Program Name : export_screen.dart
-// Description : Export screen for the Flutter app
-// First Written on : 2024-06-10
-// Edited on : 2024-07-18
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../../../core/api/providers.dart';
 import '../../../core/models/models.dart';
 import '../../../core/widgets/account_menu_button.dart';
@@ -45,6 +40,15 @@ class _ExportScreenState extends ConsumerState<ExportScreen>
       await ref.read(exportServiceProvider).requestExport();
       ref.invalidate(myExportsProvider);
       _snack('Export queued — check below when ready.');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        // Already-queued/running conflict from the backend — friendly
+        // message instead of surfacing the raw exception.
+        _snack('An export is already queued or running — check below.');
+      } else {
+        _snack(e.response?.data?['detail']?.toString() ??
+            'Failed to queue export. Please try again.');
+      }
     } catch (e) {
       _snack('Failed: $e');
     } finally {
@@ -76,6 +80,13 @@ class _ExportScreenState extends ConsumerState<ExportScreen>
     try {
       await ref.read(researcherServiceProvider).triggerRetrain();
       _snack('Retrain job queued.');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        _snack('A retrain job is already queued or running.');
+      } else {
+        _snack(e.response?.data?['detail']?.toString() ??
+            'Failed to queue retrain. Please try again.');
+      }
     } catch (e) {
       _snack('Error: $e');
     } finally {
